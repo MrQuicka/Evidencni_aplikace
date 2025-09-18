@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Logování činností{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <h2>Logování činností</h2>
+    <form method="post">
+      <div class="mb-3">
+        <label class="form-label">Projekt:</label>
+        <select name="project_id" class="form-select">
+          {% for project in projects %}
+            <option value="{{ project.id }}">{{ project.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Poznámka:</label>
+        <textarea name="note" class="form-control"></textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Akce:</label>
+        <select name="action" class="form-select">
+          <option value="start">Start činnosti</option>
+          <option value="end">Konec činnosti</option>
+          <option value="pause_start">Start pauzy</option>
+          <option value="pause_end">Konec pauzy</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Čas začátku:</label>
+        <input type="datetime-local" name="start_time" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Čas konce:</label>
+        <input type="datetime-local" name="end_time" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Čas startu pauzy:</label>
+        <input type="datetime-local" name="pause_start_time" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Čas konce pauzy:</label>
+        <input type="datetime-local" name="pause_end_time" class="form-control">
+      </div>
+      <button type="submit" class="btn btn-primary">Odeslat</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

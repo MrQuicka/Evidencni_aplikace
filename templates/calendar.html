@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Kalendář aktivit{% endblock %}
+
+{% block content %}
+  <h1>Kalendář aktivit</h1>
+  <div id="calendar"></div>
+
+  <!-- Modal pro vytváření a úpravy -->
+  <div class="modal fade" id="logModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="logForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Detail aktivity</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="log-id" name="id">
+          <div class="mb-3">
+            <label for="log-project" class="form-label">Projekt</label>
+            <select class="form-select" id="log-project" name="project_id" required>
+              {% for p in current_user.projects %}
+                <option value="{{ p.id }}">{{ p.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="log-start" class="form-label">Začátek</label>
+            <input type="datetime-local" class="form-control" id="log-start" name="start" required>
+          </div>
+          <div class="mb-3">
+            <label for="log-end" class="form-label">Konec</label>
+            <input type="datetime-local" class="form-control" id="log-end" name="end" required>
+          </div>
+          <div class="mb-3">
+            <label for="log-note" class="form-label">Poznámka</label>
+            <textarea class="form-control" id="log-note" name="note"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Uložit</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zavřít</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      selectable: true,
+      editable: true,
+      events: '/api/logs',
+      dateClick: function(info) {
+        var view = calendar.view.type;
+        if (view === 'dayGridMonth' || view === 'timeGridWeek') {
+          calendar.changeView('timeGridDay', info.dateStr);
+        }
+      },
+      select: function(info) {
+        if (calendar.view.type === 'timeGridDay') {
+          openLogModal({ start: info.startStr, end: info.endStr });
+          calendar.unselect();
+        }
+      },
+      eventClick: function(info) {
+        openLogModal({
+          id: info.event.id,
+          project_id: info.event.extendedProps.project_id,
+          note: info.event.extendedProps.note,
+          start: info.event.startStr,
+          end: info.event.endStr
+        });
+      },
+      eventDrop: function(info) {
+        var e = info.event;
+        var payload = {
+          project_id: e.extendedProps.project_id,
+          start:      e.startStr,
+          end:        e.endStr,
+          note:       e.extendedProps.note
+        };
+        fetch('/api/logs/' + e.id, {
+          method: 'PUT',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        })
+        .then(function(r) { if (!r.ok) throw new Error('Chyba při ukládání'); })
+        .catch(function() { info.revert(); alert('Nepodařilo se uložit změnu času.'); });
+      },
+      eventResize: function(info) {
+        var e = info.event;
+        var payload = {
+          project_id: e.extendedProps.project_id,
+          start:      e.startStr,
+          end:        e.endStr,
+          note:       e.extendedProps.note
+        };
+        fetch('/api/logs/' + e.id, {
+          method: 'PUT',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        })
+        .then(function(r) { if (!r.ok) throw new Error('Chyba při ukládání'); })
+        .catch(function() { info.revert(); alert('Nepodařilo se uložit změnu délky.'); });
+      }
+    });
+    calendar.render();
+
+    // odeslání formuláře
+    document.getElementById('logForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var id = document.getElementById('log-id').value;
+      var payload = {
+        project_id: document.getElementById('log-project').value,
+        start:      document.getElementById('log-start').value,
+        end:        document.getElementById('log-end').value,
+        note:       document.getElementById('log-note').value
+      };
+      var method = id ? 'PUT' : 'POST';
+      var url    = '/api/logs' + (id ? '/' + id : '');
+      fetch(url, {
+        method: method,
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      }).then(function() {
+        bootstrap.Modal.getInstance(document.getElementById('logModal')).hide();
+        calendar.refetchEvents();
+      });
+    });
+  });
+
+  // otevře modal a naplní data
+  function openLogModal(data) {
+    var modalEl = document.getElementById('logModal');
+    var modal = new bootstrap.Modal(modalEl);
+    document.getElementById('log-id').value      = data.id || '';
+    document.getElementById('log-project').value = data.project_id || '';
+    document.getElementById('log-start').value   = data.start ? data.start.slice(0,16) : '';
+    document.getElementById('log-end').value     = data.end   ? data.end.slice(0,16)   : '';
+    document.getElementById('log-note').value    = data.note  || '';
+    modal.show();
+  }
+</script>
+{% endblock %}

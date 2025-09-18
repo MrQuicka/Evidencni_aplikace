@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Projekty{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <h2 class="mb-3">Projekty</h2>
+
+    <!-- Tlačítko pro vytvoření nového projektu -->
+    <div class="mb-4">
+      <a href="{{ url_for('create_project') }}" class="btn btn-primary">Vytvořit nový projekt</a>
+    </div>
+
+    <!-- Tabulka projektů -->
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Název projektu</th>
+          <th style="width: 100px;">Akce</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for project in projects %}
+        <tr>
+          <td>{{ project.name }}</td>
+          <td>
+            <form method="post" action="{{ url_for('delete_project', project_id=project.id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-danger btn-sm">Smazat</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

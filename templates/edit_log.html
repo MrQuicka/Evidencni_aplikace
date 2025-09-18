@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Upravit záznam{% endblock %}
+{% block content %}
+<div class="container">
+  <h2>Upravit záznam</h2>
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Čas začátku:</label>
+      <input type="datetime-local" name="start_time" class="form-control" value="{{ log.start_time.strftime('%Y-%m-%dT%H:%M') if log.start_time }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Čas konce:</label>
+      <input type="datetime-local" name="end_time" class="form-control" value="{{ log.end_time.strftime('%Y-%m-%dT%H:%M') if log.end_time }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Čas startu pauzy:</label>
+      <input type="datetime-local" name="pause_start_time" class="form-control" value="{{ log.pause_start.strftime('%Y-%m-%dT%H:%M') if log.pause_start }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Čas konce pauzy:</label>
+      <input type="datetime-local" name="pause_end_time" class="form-control" value="{{ log.pause_end.strftime('%Y-%m-%dT%H:%M') if log.pause_end }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Poznámka:</label>
+      <textarea name="note" class="form-control">{{ log.note }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Uložit změny</button>
+    <a href="{{ url_for('logs') }}" class="btn btn-secondary">Zrušit</a>
+  </form>
+</div>
+{% endblock %}

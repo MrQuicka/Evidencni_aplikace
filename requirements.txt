@@ -1,0 +1,9 @@
+Flask>=1.1
+Flask-SQLAlchemy
+Flask-Login
+PyMySQL
+Werkzeug
+Flask-Migrate
+XlsxWriter
+python-dateutil
+

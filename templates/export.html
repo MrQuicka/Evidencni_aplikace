@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Export záznamů{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">Export záznamů</h2>
+  <!-- Formulář pro export do Excelu -->
+  <form action="{{ url_for('export_excel') }}" method="get" class="mb-4">
+    <h4>Export do Excelu</h4>
+    <div class="mb-3">
+      <label for="projectSelectExcel" class="form-label">Vyber projekt:</label>
+      <select name="project_id" id="projectSelectExcel" class="form-select">
+        <option value="all">Všechny projekty</option>
+        {% for project in projects %}
+          <option value="{{ project.id }}">{{ project.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="monthInputExcel" class="form-label">Vyber měsíc:</label>
+      <input type="month" name="month" id="monthInputExcel" class="form-control">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Vyber sloupce k exportu:</label>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="id" id="colIdExcel" checked>
+        <label class="form-check-label" for="colIdExcel">ID</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="project" id="colProjectExcel" checked>
+        <label class="form-check-label" for="colProjectExcel">Projekt</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="start_time" id="colStartExcel" checked>
+        <label class="form-check-label" for="colStartExcel">Začátek</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="end_time" id="colEndExcel" checked>
+        <label class="form-check-label" for="colEndExcel">Konec</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="pause_start" id="colPauseStartExcel" checked>
+        <label class="form-check-label" for="colPauseStartExcel">Start pauzy</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="pause_end" id="colPauseEndExcel" checked>
+        <label class="form-check-label" for="colPauseEndExcel">Konec pauzy</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="note" id="colNoteExcel" checked>
+        <label class="form-check-label" for="colNoteExcel">Poznámka</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="hours" id="colHoursExcel" checked>
+        <label class="form-check-label" for="colHoursExcel">Odpracované hodiny</label>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Exportovat do Excelu</button>
+  </form>
+
+  <a href="{{ url_for('projects') }}" class="btn btn-secondary">Zpět na hlavní stránku</a>
+</div>
+  <!-- Formulář pro export do CSV -->
+  <form action="{{ url_for('export_csv') }}" method="get" class="mb-4">
+    <h4>Export do CSV</h4>
+    <div class="mb-3">
+      <label for="projectSelectCSV" class="form-label">Vyber projekt:</label>
+      <select name="project_id" id="projectSelectCSV" class="form-select">
+        <option value="all">Všechny projekty</option>
+        {% for project in projects %}
+          <option value="{{ project.id }}">{{ project.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="monthInputCSV" class="form-label">Vyber měsíc:</label>
+      <input type="month" name="month" id="monthInputCSV" class="form-control">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Vyber sloupce k exportu:</label>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="id" id="colId" checked>
+        <label class="form-check-label" for="colId">ID</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="project" id="colProject" checked>
+        <label class="form-check-label" for="colProject">Projekt</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="start_time" id="colStart" checked>
+        <label class="form-check-label" for="colStart">Začátek</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="end_time" id="colEnd" checked>
+        <label class="form-check-label" for="colEnd">Konec</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="pause_start" id="colPauseStart" checked>
+        <label class="form-check-label" for="colPauseStart">Start pauzy</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="pause_end" id="colPauseEnd" checked>
+        <label class="form-check-label" for="colPauseEnd">Konec pauzy</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="note" id="colNote" checked>
+        <label class="form-check-label" for="colNote">Poznámka</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="columns" value="hours" id="colHours" checked>
+        <label class="form-check-label" for="colHours">Odpracované hodiny</label>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-success">Exportovat do CSV</button>
+  </form>
+
+{% endblock %}
