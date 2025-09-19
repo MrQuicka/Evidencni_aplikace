@@ -2,6 +2,10 @@
 import os
 from flask import Flask
 from dotenv import load_dotenv
+from extensions import db, migrate
+from extensions import db as _db
+from models import Record as _Record
+
 
 # Načti .env soubor, pokud existuje
 load_dotenv()
@@ -21,10 +25,10 @@ def create_app():
 
     app.config.from_object(Config)
 
-    # --- Místo pro budoucí extensions (db, migrate, login_manager, ...) ---
-    # např. db.init_app(app), migrate.init_app(app, db)
+    db.init_app(app)
+    migrate.init_app(app, db)
 
-    # --- Registrace blueprintů (pokud existují) ---
+    # --- Registrace blueprintů ---
     try:
         from calendar_bp import bp as calendar_bp
         app.register_blueprint(calendar_bp, url_prefix="/calendar")
@@ -42,6 +46,9 @@ def create_app():
         return {"status": "ok"}
 
     return app
+
+
+
 
 # Umožní spustit: python app.py (kromě 'flask --app app run')
 if __name__ == "__main__":

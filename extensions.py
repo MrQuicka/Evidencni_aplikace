@@ -1,3 +1,6 @@
 # extensions.py
-# Sem budeme postupně přidávat: db = SQLAlchemy(), migrate = Migrate(), login_manager = LoginManager(), ...
-# Zatím prázdné – jen „kotva“ pro budoucí inicializace.
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+
+db = SQLAlchemy()
+migrate = Migrate()

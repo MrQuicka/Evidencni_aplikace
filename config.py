@@ -2,11 +2,11 @@
 import os
 
 class BaseConfig:
-    # Bezpečnostní klíč z prostředí (pro session, CSRF apod.)
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
-    # Databáze – zatím klidně SQLite; později přepneme na Postgres/MySQL
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///instance/app.db")
-    # Flask built-ins
+    # >> DŮLEŽITÉ: SQLAlchemy očekává klíč SQLALCHEMY_DATABASE_URI
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    SQLALCHEMY_TRACK_MODIFICATIONS = False  # vypne hlučné signalizace
     DEBUG = False
     TESTING = False
 

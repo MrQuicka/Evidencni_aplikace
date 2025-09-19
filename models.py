@@ -32,3 +32,14 @@ class LogEntry(db.Model):
 
     project = db.relationship('Project', backref=db.backref('logs', lazy=True))
     user = db.relationship('User', backref=db.backref('logs', lazy=True))
+
+class Record(db.Model):
+    __tablename__ = "records"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    note = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+    def __repr__(self) -> str:
+        return f"<Record id={self.id} title={self.title!r}>"

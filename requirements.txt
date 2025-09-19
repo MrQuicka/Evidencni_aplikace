@@ -1,10 +1,10 @@
-Flask>=1.1
+Flask==2.3.3
 Flask-SQLAlchemy
 Flask-Login
-PyMySQL
 Werkzeug
-Flask-Migrate
+Flask-Migrate==4.0.5
 XlsxWriter
 python-dateutil
-Flask==2.3.3
 python-dotenv==1.0.1
+SQLAlchemy==2.0.21
+pymysql==1.1.1
