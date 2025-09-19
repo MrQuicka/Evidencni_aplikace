@@ -1,134 +1,220 @@
-{% extends "base.html" %}
-{% block title %}Reporty{% endblock %}
-
-{% block content %}
-  <!-- Filtr období a projektů -->
-<div class="row mb-3">
-  <div class="col">
-    <form class="row gx-2" method="get">
-      <input type="hidden" name="period" value="{{ period }}">
-      <div class="col-auto">
-        <label for="start_date" class="form-label">Od</label>
-        <input type="date" id="start_date" name="start_date" class="form-control" value="{{ start_date or '' }}">
-      </div>
-      <div class="col-auto">
-        <label for="end_date" class="form-label">Do</label>
-        <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date or '' }}">
-      </div>
-      <div class="col-auto">
-        <label for="project_filter" class="form-label">Projekt</label>
-        <select id="project_filter" name="project_id" class="form-select">
-          <option value="all">Všechny</option>
-          {% for p in projects %}
-            <option value="{{ p.id }}" {% if p.id|string == project_id %}selected{% endif %}>{{ p.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-auto align-self-end">
-        <button type="submit" class="btn btn-primary">Filtruj</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Navigační záložky -->
-  <div class="row mb-3">
-    <div class="col">
-      <ul class="nav nav-tabs">
-        <li class="nav-item">
-          <a class="nav-link {% if period == 'daily' %}active{% endif %}" href="?period=daily">Denní</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if period == 'weekly' %}active{% endif %}" href="?period=weekly">Týdenní</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if period == 'monthly' %}active{% endif %}" href="?period=monthly">Měsíční</a>
-        </li>
-      </ul>
-    </div>
-  </div>
-
-  {% if data_exists %}
-    <!-- Graf podle projektů -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header">Hodiny podle projektů</div>
-          <div class="card-body">
-            <canvas id="reportChart"></canvas>
-          </div>
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporty - Docházka</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+</head>
+<body>
+    <!-- Navigace -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="bi bi-clock-history"></i> Docházka
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('calendar_view') }}">Kalendář</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logs') }}">Záznamy</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('projects') }}">Projekty</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('reports_view') }}">Reporty</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('export') }}">Export</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Odhlásit se</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
         </div>
-      </div>
-    </div>
+    </nav>
 
-    <!-- Podrobná tabulka -->
-    <div class="row">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header">Podrobný přehled</div>
-          <div class="card-body table-responsive">
-            <table class="table table-bordered table-hover">
-              <thead class="table-light">
-                <tr>
-                  <th>Období</th>
-                  {% for ds in chart_data.datasets %}
-                    <th>{{ ds.label }}</th>
-                  {% endfor %}
-                  <th>Celkem</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for label in chart_data.labels %}
-                  {% set outer_idx = loop.index0 %}
-                  <tr>
-                    <td>{{ label }}</td>
-                    {% set row_total = 0 %}
-                    {% for ds in chart_data.datasets %}
-                      {% set value = ds.data[outer_idx] %}
-                      {% set row_total = row_total + value %}
-                      <td>{{ value | round(2) }}</td>
-                    {% endfor %}
-                    <td class="fw-bold">{{ row_total | round(2) }}</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-              <tfoot class="table-light">
-                <tr>
-                  <th>Celkem</th>
-                  {% set total_all = 0 %}
-                  {% for ds in chart_data.datasets %}
-                    {% set ds_sum = ds.data | sum %}
-                    {% set total_all = total_all + ds_sum %}
-                    <th>{{ ds_sum | round(2) }}</th>
-                  {% endfor %}
-                  <th class="fw-bold">{{ total_all | round(2) }}</th>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+    <div class="container mt-4">
+        <h2>Reporty</h2>
+
+        <!-- Filtry -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('reports_view') }}" id="filterForm">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="period" class="form-label">Období</label>
+                            <select class="form-select" name="period" id="period">
+                                <option value="daily" {% if period == 'daily' %}selected{% endif %}>Denně</option>
+                                <option value="weekly" {% if period == 'weekly' %}selected{% endif %}>Týdně</option>
+                                <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Měsíčně</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="project_id" class="form-label">Projekt</label>
+                            <select class="form-select" name="project_id" id="project_id">
+                                <option value="all" {% if project_id == 'all' %}selected{% endif %}>Všechny projekty</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}" {% if project_id == project.id|string %}selected{% endif %}>
+                                    {{ project.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="start_date" class="form-label">Od data</label>
+                            <input type="date" class="form-control" name="start_date" id="start_date" 
+                                   value="{{ start_date or '' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="end_date" class="form-label">Do data</label>
+                            <input type="date" class="form-control" name="end_date" id="end_date" 
+                                   value="{{ end_date or '' }}">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-funnel"></i> Filtrovat
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
-      </div>
+
+        <!-- Graf -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Přehled odpracovaných hodin</h5>
+            </div>
+            <div class="card-body">
+                {% if data_exists %}
+                <div style="position: relative; height: 400px;">
+                    <canvas id="hoursChart"></canvas>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Pro vybrané období nejsou k dispozici žádná data.
+                    Zkuste změnit filtry nebo přidat nové záznamy.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Statistiky -->
+        {% if data_exists %}
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Celkem hodin</h5>
+                        <h2 class="text-primary" id="totalHours">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Průměr na období</h5>
+                        <h2 class="text-success" id="avgHours">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Počet období</h5>
+                        <h2 class="text-info" id="periodCount">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
-  {% else %}
-    <div class="alert alert-info">Pro vybrané období nejsou žádná data.</div>
-  {% endif %}
-{% endblock %}
 
-{% block scripts %}
-<script>
-  const ctx = document.getElementById('reportChart');
-  if (ctx) {
-    new Chart(ctx, {
-      type: 'bar',
-      data: {{ chart_data | safe }},
-      options: {
-        responsive: true,
-        scales: {
-          y: { beginAtZero: true, title: { display: true, text: 'Odpracované hodiny' } }
-        }
-      }
-    });
-  }
-</script>
-{% endblock %}
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        {% if data_exists %}
+        // Data z backendu
+        const chartData = {{ chart_data | tojson | safe }};
+        
+        // Výpočet statistik
+        let totalHours = 0;
+        chartData.datasets.forEach(dataset => {
+            dataset.data.forEach(value => {
+                totalHours += value;
+            });
+        });
+        
+        const periodCount = chartData.labels.length;
+        const avgHours = periodCount > 0 ? (totalHours / periodCount).toFixed(2) : 0;
+        
+        // Zobrazení statistik
+        document.getElementById('totalHours').textContent = totalHours.toFixed(2) + ' h';
+        document.getElementById('avgHours').textContent = avgHours + ' h';
+        document.getElementById('periodCount').textContent = periodCount;
+        
+        // Vytvoření grafu
+        const ctx = document.getElementById('hoursChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: false
+                    },
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' h';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: false,
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        stacked: false,
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' h';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    </script>
+</body>
+</html>
