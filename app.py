@@ -63,8 +63,13 @@ def load_user(user_id):
 #                  NOVÉ ROUTY
 # --------------------------------------------------
 
+@app.route('/test')
+def test():
+    return "Test OK", 200
+
 @app.route('/')
 @login_required
+
 def dashboard():
     """Úvodní dashboard s přehledem statistik."""
     today = datetime.now().date()
@@ -644,3 +649,16 @@ def export_excel():
         'border': 1
     })
     number
+# --------------------------------------------------
+#                Spuštění aplikace
+# --------------------------------------------------
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        if not User.query.filter_by(username='admin').first():
+            user = User(username='admin', password=generate_password_hash('admin'))
+            db.session.add(user)
+            db.session.commit()
+    
+    # Spusť aplikaci
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
