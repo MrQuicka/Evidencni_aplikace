@@ -618,13 +618,12 @@ def export_csv():
 @app.route('/export/excel')
 @login_required
 def export_excel():
-    """Export do Excelu s vylepšeným formátováním."""
     project_id = request.args.get('project_id')
     month = request.args.get('month')
     selected_columns = request.args.getlist('columns')
     
     if not selected_columns:
-        selected_columns = [col[0] for col in ALL_COLUMNS]
+        selected_columns = ['id', 'project', 'start_time', 'end_time', 'note', 'hours']
 
     query = LogEntry.query.filter_by(user_id=current_user.id)
     
@@ -644,26 +643,69 @@ def export_excel():
     worksheet = workbook.add_worksheet("Docházka")
 
     # Formáty
-    header_format = workbook.add_format({
-        'bold': True,
-        'bg_color': '#DCE6F1',
-        'border': 1
-    })
-    date_format = workbook.add_format({
-        'num_format': 'dd.mm.yyyy hh:mm',
-        'border': 1
-    })
-    number_format = workbook.add_format({
-        'num_format': '0.00',
-        'border': 1
-    })
+    header_format = workbook.add_format({'bold': True, 'bg_color': '#DCE6F1'})
+
+    # Hlavičky
+    headers = []
+    for key in selected_columns:
+        if key == 'id': headers.append('ID')
+        elif key == 'project': headers.append('Projekt')
+        elif key == 'start_time': headers.append('Začátek')
+        elif key == 'end_time': headers.append('Konec')
+        elif key == 'pause_start': headers.append('Start pauzy')
+        elif key == 'pause_end': headers.append('Konec pauzy')
+        elif key == 'note': headers.append('Poznámka')
+        elif key == 'hours': headers.append('Hodiny')
+    
+    for col_idx, header in enumerate(headers):
+        worksheet.write(0, col_idx, header, header_format)
+
+    # Data
+    total_hours = 0
+    for row_idx, log in enumerate(user_logs, 1):
+        # Výpočet hodin
+        minutes = 0
+        if log.start_time and log.end_time:
+            minutes = (log.end_time - log.start_time).total_seconds() / 60.0
+        if log.pause_start and log.pause_end:
+            minutes -= (log.pause_end - log.pause_start).total_seconds() / 60.0
+        hours = round(minutes / 60.0, 2)
+        total_hours += hours
+
+        # Zápis řádku
+        col_idx = 0
+        for key in selected_columns:
+            if key == 'id':
+                worksheet.write(row_idx, col_idx, log.id)
+            elif key == 'project':
+                worksheet.write(row_idx, col_idx, log.project.name if log.project else '')
+            elif key == 'start_time':
+                worksheet.write(row_idx, col_idx, log.start_time.strftime('%d.%m.%Y %H:%M') if log.start_time else '')
+            elif key == 'end_time':
+                worksheet.write(row_idx, col_idx, log.end_time.strftime('%d.%m.%Y %H:%M') if log.end_time else '')
+            elif key == 'pause_start':
+                worksheet.write(row_idx, col_idx, log.pause_start.strftime('%d.%m.%Y %H:%M') if log.pause_start else '')
+            elif key == 'pause_end':
+                worksheet.write(row_idx, col_idx, log.pause_end.strftime('%d.%m.%Y %H:%M') if log.pause_end else '')
+            elif key == 'note':
+                worksheet.write(row_idx, col_idx, log.note or '')
+            elif key == 'hours':
+                worksheet.write(row_idx, col_idx, hours)
+            col_idx += 1
+
+    # Součet hodin
+    if 'hours' in selected_columns:
+        hours_col = selected_columns.index('hours')
+        worksheet.write(len(user_logs) + 1, 0, "Celkem hodin:", header_format)
+        worksheet.write(len(user_logs) + 1, hours_col, total_hours, header_format)
+
     workbook.close()
     output.seek(0)
-
+    
     return Response(
         output.read(),
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-disposition": f"attachment; filename=dochazka_{month or 'all'}.xlsx"}
+        headers={"Content-disposition": f"attachment; filename=dochazka_export.xlsx"}
     )
 
 # --------------------------------------------------
