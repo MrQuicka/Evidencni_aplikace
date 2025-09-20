@@ -269,4 +269,30 @@
                             <form method="POST" action="/logs/delete/${log.id}" style="display: inline;">
                                 <button type="submit" class="btn btn-outline-danger" title="Smazat" 
                                         onclick="return confirm('Opravdu chcete smazat tento záznam?');">
-                                    <i class="bi bi-
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                `;
+            });
+        }
+
+        function formatPause(log) {
+            if (log.pause_start && log.pause_end) {
+                const start = new Date(log.pause_start).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'});
+                const end = new Date(log.pause_end).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'});
+                return `${start} - ${end}`;
+            } else if (log.pause_start) {
+                return '<span class="badge bg-warning">Pauza</span>';
+            }
+            return '-';
+        }
+
+        function updatePagination(data) {
+            // Zde by byla implementace aktualizace stránkování
+            // Pro jednoduchost zatím necháme původní stránkování
+        }
+    </script>
+</body>
+</html>

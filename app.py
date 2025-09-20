@@ -219,7 +219,8 @@ def api_logs():
 @app.route('/calendar')
 @login_required
 def calendar_view():
-    return render_template('calendar.html')
+    templates = TaskTemplate.query.filter_by(user_id=current_user.id).all()
+    return render_template('calendar.html', templates=templates)
 
 # --------------------------------------------------
 #              PŮVODNÍ ROUTY (upravené)

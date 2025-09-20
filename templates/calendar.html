@@ -3,6 +3,28 @@
 
 {% block content %}
   <h1>Kalendář aktivit</h1>
+  
+  <!-- Panel rychlých šablon -->
+  <div class="card mb-3">
+    <div class="card-header">
+      <h6 class="mb-0">Rychlé šablony</h6>
+    </div>
+    <div class="card-body">
+      <div class="d-flex flex-wrap gap-2">
+        {% for template in templates %}
+        <form method="POST" action="/templates/apply/{{ template.id }}" style="display:inline">
+          <button type="submit" class="btn btn-sm btn-outline-primary" title="{{ template.project.name }} - {{ template.duration_minutes }} min">
+            <i class="bi bi-lightning"></i> {{ template.name }}
+          </button>
+        </form>
+        {% endfor %}
+        <a href="/templates" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-gear"></i> Spravovat šablony
+        </a>
+      </div>
+    </div>
+  </div>
+  
   <div id="calendar"></div>
 
   <!-- Modal pro vytváření a úpravy -->
@@ -115,7 +137,7 @@
     });
     calendar.render();
 
-    // odeslání formuláře
+    // Odeslání formuláře
     document.getElementById('logForm').addEventListener('submit', function(e) {
       e.preventDefault();
       var id = document.getElementById('log-id').value;
@@ -138,7 +160,7 @@
     });
   });
 
-  // otevře modal a naplní data
+  // Otevře modal a naplní data
   function openLogModal(data) {
     var modalEl = document.getElementById('logModal');
     var modal = new bootstrap.Modal(modalEl);

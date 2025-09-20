@@ -66,8 +66,11 @@
                             <strong>Poznámka:</strong> {{ template.note }}
                             {% endif %}
                         </p>
+                        <form method="POST" action="/templates/apply/{{ template.id }}" style="display:inline">
+                            <button type="submit" class="btn btn-success btn-sm">Použít teď</button>
+                        </form>
                         <form method="POST" action="/templates/delete/{{ template.id }}" style="display:inline">
-                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Opravdu smazat šablonu?')">Smazat</button>
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Opravdu smazat šablonu?')">Smazat</button>
                         </form>
                     </div>
                 </div>
