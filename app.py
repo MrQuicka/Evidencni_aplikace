@@ -217,6 +217,11 @@ def api_logs():
         'per_page': per_page
     })
 
+@app.route('/calendar')
+@login_required
+def calendar_view():
+    return render_template('calendar.html')
+
 # --------------------------------------------------
 #              PŮVODNÍ ROUTY (upravené)
 # --------------------------------------------------
