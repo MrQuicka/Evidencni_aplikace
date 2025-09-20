@@ -657,6 +657,15 @@ def export_excel():
         'num_format': '0.00',
         'border': 1
     })
+    workbook.close()
+    output.seek(0)
+
+    return Response(
+        output.read(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-disposition": f"attachment; filename=dochazka_{month or 'all'}.xlsx"}
+    )
+
 # --------------------------------------------------
 #                Spuštění aplikace
 # --------------------------------------------------
