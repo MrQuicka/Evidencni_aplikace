@@ -41,18 +41,18 @@ class Record(db.Model):
     note = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
 
-        def __repr__(self) -> str:
-            return f"<Record id={self.id} title={self.title!r}>"
-    
-    class TaskTemplate(db.Model):
-        __tablename__ = 'task_templates'
-        id = db.Column(db.Integer, primary_key=True)
-        name = db.Column(db.String(100), nullable=False)  # Název šablony
-        project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
-        user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-        duration_minutes = db.Column(db.Integer, default=60)  # Výchozí délka
-        note = db.Column(db.Text, nullable=True)
-        color = db.Column(db.String(7), default='#0d6efd')  # Barva pro kalendář
-    
-        project = db.relationship('Project', backref='templates')
-        user = db.relationship('User', backref='templates')
+    def __repr__(self) -> str:
+        return f"<Record id={self.id} title={self.title!r}>"
+
+class TaskTemplate(db.Model):
+    __tablename__ = 'task_templates'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)  # Název šablony
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    duration_minutes = db.Column(db.Integer, default=60)  # Výchozí délka
+    note = db.Column(db.Text, nullable=True)
+    color = db.Column(db.String(7), default='#0d6efd')  # Barva pro kalendář
+
+    project = db.relationship('Project', backref='templates')
+    user = db.relationship('User', backref='templates')
