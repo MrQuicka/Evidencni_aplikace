@@ -653,7 +653,10 @@ def export_excel():
         'num_format': 'dd.mm.yyyy hh:mm',
         'border': 1
     })
-    number
+    number_format = workbook.add_format({
+        'num_format': '0.00',
+        'border': 1
+    })
 # --------------------------------------------------
 #                Spuštění aplikace
 # --------------------------------------------------
