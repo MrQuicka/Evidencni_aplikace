@@ -759,6 +759,18 @@ def apply_template(template_id):
     flash(f'Vytvořen záznam podle šablony: {template.name}')
     return redirect(url_for('calendar_view'))
 
+@app.route('/templates/delete/<int:template_id>', methods=['POST'])
+@login_required
+def delete_template(template_id):
+    template = TaskTemplate.query.get_or_404(template_id)
+    if template.user_id != current_user.id:
+        flash('Nemáte oprávnění smazat tuto šablonu.')
+        return redirect(url_for('templates'))
+    db.session.delete(template)
+    db.session.commit()
+    flash('Šablona byla smazána.')
+    return redirect(url_for('templates'))
+
 # --------------------------------------------------
 #                Spuštění aplikace
 # --------------------------------------------------
