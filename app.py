@@ -9,9 +9,8 @@ import csv
 import io
 import xlsxwriter
 from dateutil.relativedelta import relativedelta
+from models import db, User, Project, LogEntry, TaskTemplate
 
-# Import modelů
-from models import db, User, Project, LogEntry
 
 # Import kalendářového blueprintu
 from calendar_bp import bp as calendar_bp
