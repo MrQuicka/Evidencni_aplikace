@@ -708,6 +708,58 @@ def export_excel():
         headers={"Content-disposition": f"attachment; filename=dochazka_export.xlsx"}
     )
 
+@app.route('/templates')
+@login_required
+def templates():
+    templates = TaskTemplate.query.filter_by(user_id=current_user.id).all()
+    projects = Project.query.filter_by(user_id=current_user.id).all()
+    return render_template('templates.html', templates=templates, projects=projects)
+
+@app.route('/templates/create', methods=['POST'])
+@login_required
+def create_template():
+    name = request.form.get('name')
+    project_id = request.form.get('project_id')
+    duration = request.form.get('duration_minutes', 60)
+    note = request.form.get('note')
+    
+    template = TaskTemplate(
+        name=name,
+        project_id=project_id,
+        user_id=current_user.id,
+        duration_minutes=int(duration),
+        note=note
+    )
+    db.session.add(template)
+    db.session.commit()
+    flash('Šablona vytvořena')
+    return redirect(url_for('templates'))
+
+@app.route('/templates/apply/<int:template_id>', methods=['POST'])
+@login_required
+def apply_template(template_id):
+    template = TaskTemplate.query.get_or_404(template_id)
+    if template.user_id != current_user.id:
+        flash('Neplatná šablona')
+        return redirect(url_for('calendar_view'))
+    
+    # Vytvoř nový záznam podle šablony
+    start = datetime.now()
+    end = start + timedelta(minutes=template.duration_minutes)
+    
+    log = LogEntry(
+        project_id=template.project_id,
+        user_id=current_user.id,
+        start_time=start,
+        end_time=end,
+        note=template.note
+    )
+    db.session.add(log)
+    db.session.commit()
+    
+    flash(f'Vytvořen záznam podle šablony: {template.name}')
+    return redirect(url_for('calendar_view'))
+
 # --------------------------------------------------
 #                Spuštění aplikace
 # --------------------------------------------------
