@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Nastavení fakturace{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Nastavení fakturace</h2>
+    
+    <form method="POST" action="/invoicing/settings/save">
+        <!-- API nastavení -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>iDoklad API přístup</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="api_key">Client ID:</label>
+                    <input type="text" class="form-control" id="api_key" name="api_key" 
+                           value="{{ user_settings.idoklad_api_key if user_settings else '' }}">
+                    <small class="form-text text-muted">Získáte v iDoklad → Nastavení → API</small>
+                </div>
+                <div class="mb-3">
+                    <label for="api_secret">Client Secret:</label>
+                    <input type="password" class="form-control" id="api_secret" name="api_secret"
+                           value="{{ user_settings.idoklad_api_secret if user_settings else '' }}">
+                </div>
+                <button type="button" class="btn btn-sm btn-info" onclick="testConnection()">
+                    Test připojení
+                </button>
+            </div>
+        </div>
+
+        <!-- Nastavení projektů -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Nastavení projektů</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Projekt</th>
+                            <th>ID kontaktu</th>
+                            <th>Název položky</th>
+                            <th>Sazba/hod</th>
+                            <th>Hodin/MD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in projects %}
+                        {% set settings = invoice_settings|selectattr('project_id', 'equalto', project.id)|first %}
+                        <tr>
+                            <td>{{ project.name }}</td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm" 
+                                       name="contact_{{ project.id }}"
+                                       value="{{ settings.idoklad_contact_id if settings else '' }}">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm" 
+                                       name="item_{{ project.id }}"
+                                       value="{{ settings.idoklad_item_name if settings else '' }}">
+                            </td>
+                            <td>
+                                <input type="number" class="form-control form-control-sm" 
+                                       name="rate_{{ project.id }}" step="0.01"
+                                       value="{{ settings.hourly_rate if settings else '' }}">
+                            </td>
+                            <td>
+                                <input type="number" class="form-control form-control-sm" 
+                                       name="md_{{ project.id }}" step="0.5"
+                                       value="{{ settings.hours_per_md if settings else '8' }}">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary">Uložit nastavení</button>
+            <a href="/invoicing" class="btn btn-secondary">Zpět</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function testConnection() {
+    const clientId = document.getElementById('api_key').value;
+    const clientSecret = document.getElementById('api_secret').value;
+    
+    if (!clientId || !clientSecret) {
+        alert('Vyplňte Client ID a Client Secret');
+        return;
+    }
+    
+    fetch('/invoicing/test-connection', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Připojení úspěšné!');
+        } else {
+            alert('Připojení selhalo: ' + data.error);
+        }
+    });
+}
+</script>
+{% endblock %}

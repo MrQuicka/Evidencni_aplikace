@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Fakturace{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Fakturace</h2>
+    
+    <div class="d-flex justify-content-between mb-3">
+        <div>
+            <a href="/invoicing/settings" class="btn btn-secondary">
+                <i class="bi bi-gear"></i> Nastavení fakturace
+            </a>
+        </div>
+    </div>
+
+    {% if not settings %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> 
+        Nejprve je potřeba <a href="/invoicing/settings">nastavit fakturační údaje</a>.
+    </div>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Měsíc</th>
+                    <th>Projekt</th>
+                    <th>Hodiny</th>
+                    <th>Man-days</th>
+                    <th>Stav</th>
+                    <th>Akce</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for summary in summaries %}
+                <tr>
+                    <td>{{ summary.month }}</td>
+                    <td>{{ summary.project_name }}</td>
+                    <td>{{ summary.hours }}</td>
+                    <td>{{ "%.2f"|format(summary.hours / 8) }}</td>
+                    <td>
+                        {% if summary.is_invoiced %}
+                            <span class="badge bg-success">Vyfakturováno</span>
+                        {% else %}
+                            <span class="badge bg-warning">Čeká na fakturaci</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not summary.is_invoiced %}
+                        <button class="btn btn-sm btn-primary" 
+                                onclick="createInvoice('{{ summary.month }}', {{ summary.project_id }})">
+                            <i class="bi bi-file-earmark-text"></i> Vytvořit fakturu
+                        </button>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal pro vytvoření faktury -->
+<div class="modal fade" id="invoiceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Vytvořit fakturu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/invoicing/create">
+                <div class="modal-body">
+                    <input type="hidden" id="invoice_month" name="month">
+                    <input type="hidden" id="invoice_project_id" name="project_id">
+                    
+                    <div class="mb-3">
+                        <label>Měsíc:</label>
+                        <span id="invoice_month_display"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Projekt:</label>
+                        <span id="invoice_project_display"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Hodiny:</label>
+                        <span id="invoice_hours_display"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="invoice_description">Popis faktury:</label>
+                        <textarea class="form-control" id="invoice_description" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zrušit</button>
+                    <button type="submit" class="btn btn-primary">Vytvořit fakturu v iDokladu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function createInvoice(month, projectId) {
+    // Najdi data v tabulce
+    const row = event.target.closest('tr');
+    const projectName = row.cells[1].innerText;
+    const hours = row.cells[2].innerText;
+    
+    // Naplň modal
+    document.getElementById('invoice_month').value = month;
+    document.getElementById('invoice_project_id').value = projectId;
+    document.getElementById('invoice_month_display').innerText = month;
+    document.getElementById('invoice_project_display').innerText = projectName;
+    document.getElementById('invoice_hours_display').innerText = hours;
+    document.getElementById('invoice_description').value = `Fakturace za ${month} - ${projectName}`;
+    
+    // Zobraz modal
+    new bootstrap.Modal(document.getElementById('invoiceModal')).show();
+}
+</script>
+{% endblock %}

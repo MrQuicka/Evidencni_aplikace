@@ -10,6 +10,8 @@ import io
 import xlsxwriter
 from dateutil.relativedelta import relativedelta
 from models import db, User, Project, LogEntry, TaskTemplate
+from models_invoice import InvoiceSettings, UserSettings, InvoiceHistory
+from idoklad_api import IDokladAPI
 
 
 # Import kalendářového blueprintu
@@ -772,6 +774,174 @@ def delete_template(template_id):
     flash('Šablona byla smazána.')
     return redirect(url_for('templates'))
 
+@app.route('/invoicing')
+@login_required
+def invoicing():
+    """Stránka pro správu fakturace"""
+    # Načti souhrny po měsících
+    monthly_data = db.session.query(
+        func.date_format(LogEntry.start_time, '%Y-%m').label('month'),
+        Project.id.label('project_id'),
+        Project.name.label('project_name'),
+        func.sum(
+            func.timestampdiff(text('MINUTE'), LogEntry.start_time, LogEntry.end_time)
+        ) / 60.0
+    ).join(Project).filter(
+        LogEntry.user_id == current_user.id,
+        LogEntry.end_time.isnot(None)
+    ).group_by('month', Project.id).order_by(text('month DESC')).all()
+    
+    # Načti historii faktur
+    invoice_history = InvoiceHistory.query.filter_by(user_id=current_user.id).all()
+    invoiced_months = {(h.month, h.project_id) for h in invoice_history}
+    
+    # Připrav data s informací o fakturaci
+    summaries = []
+    for row in monthly_data:
+        summaries.append({
+            'month': row.month,
+            'project_id': row.project_id,
+            'project_name': row.project_name,
+            'hours': round(row[3], 2),
+            'is_invoiced': (row.month, row.project_id) in invoiced_months
+        })
+    
+    # Načti nastavení
+    settings = InvoiceSettings.query.join(Project).filter(
+        Project.user_id == current_user.id
+    ).all()
+    
+    return render_template('invoicing.html', 
+                          summaries=summaries,
+                          settings=settings)
+
+@app.route('/invoicing/settings')
+@login_required
+def invoicing_settings():
+    """Nastavení fakturace"""
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    projects = Project.query.filter_by(user_id=current_user.id).all()
+    invoice_settings = InvoiceSettings.query.join(Project).filter(
+        Project.user_id == current_user.id
+    ).all()
+    
+    return render_template('invoicing_settings.html',
+                          user_settings=user_settings,
+                          projects=projects,
+                          invoice_settings=invoice_settings)
+
+@app.route('/invoicing/settings/save', methods=['POST'])
+@login_required
+def save_invoicing_settings():
+    """Uložení nastavení"""
+    # Ulož API klíče
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    if not user_settings:
+        user_settings = UserSettings(user_id=current_user.id)
+        db.session.add(user_settings)
+    
+    user_settings.idoklad_api_key = request.form.get('api_key')
+    user_settings.idoklad_api_secret = request.form.get('api_secret')
+    
+    # Ulož nastavení projektů
+    for key in request.form:
+        if key.startswith('contact_'):
+            project_id = key.split('_')[1]
+            settings = InvoiceSettings.query.filter_by(project_id=project_id).first()
+            if not settings:
+                settings = InvoiceSettings(project_id=project_id)
+                db.session.add(settings)
+            
+            settings.idoklad_contact_id = request.form.get(f'contact_{project_id}')
+            settings.idoklad_item_name = request.form.get(f'item_{project_id}')
+            settings.hourly_rate = float(request.form.get(f'rate_{project_id}', 0))
+            settings.hours_per_md = float(request.form.get(f'md_{project_id}', 8))
+    
+    db.session.commit()
+    flash('Nastavení uloženo')
+    return redirect(url_for('invoicing_settings'))
+
+@app.route('/invoicing/create', methods=['POST'])
+@login_required
+def create_invoice_route():
+    """Vytvoření faktury v iDokladu"""
+    month = request.form.get('month')
+    project_id = int(request.form.get('project_id'))
+    description = request.form.get('description')
+    
+    # Načti nastavení
+    settings = InvoiceSettings.query.filter_by(project_id=project_id).first()
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    
+    if not settings or not user_settings:
+        flash('Chybí nastavení pro fakturaci')
+        return redirect(url_for('invoicing'))
+    
+    # Spočítej hodiny
+    start_date = datetime.strptime(f"{month}-01", '%Y-%m-%d')
+    end_date = start_date + relativedelta(months=1)
+    
+    total_minutes = db.session.query(
+        func.sum(
+            func.timestampdiff(text('MINUTE'), LogEntry.start_time, LogEntry.end_time)
+        )
+    ).filter(
+        LogEntry.user_id == current_user.id,
+        LogEntry.project_id == project_id,
+        LogEntry.start_time >= start_date,
+        LogEntry.start_time < end_date
+    ).scalar() or 0
+    
+    hours = total_minutes / 60.0
+    man_days = hours / settings.hours_per_md
+    
+    # Vytvoř fakturu přes API
+    api = IDokladAPI(user_settings.idoklad_api_key, user_settings.idoklad_api_secret)
+    
+    items = [{
+        'Name': settings.idoklad_item_name or f'Práce za {month}',
+        'Quantity': round(man_days, 2),
+        'UnitPrice': settings.hourly_rate * settings.hours_per_md,
+        'Unit': 'MD',
+        'VatRateType': 1  # Základní sazba DPH
+    }]
+    
+    result = api.create_invoice(settings.idoklad_contact_id, items, description)
+    
+    if result.get('Data'):
+        # Ulož do historie
+        history = InvoiceHistory(
+            user_id=current_user.id,
+            project_id=project_id,
+            month=month,
+            hours=hours,
+            invoice_number=result['Data'].get('DocumentNumber'),
+            idoklad_invoice_id=result['Data'].get('Id')
+        )
+        db.session.add(history)
+        db.session.commit()
+        
+        flash(f'Faktura {result["Data"]["DocumentNumber"]} vytvořena v iDokladu!')
+    else:
+        flash('Chyba při vytváření faktury: ' + str(result.get('Message', 'Neznámá chyba')))
+    
+    return redirect(url_for('invoicing'))
+
+@app.route('/invoicing/test-connection', methods=['POST'])
+@login_required
+def test_idoklad_connection():
+    """Test připojení k iDoklad API"""
+    data = request.get_json()
+    
+    try:
+        api = IDokladAPI(data['client_id'], data['client_secret'])
+        if api.token:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Nepodařilo se získat token'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+    
 # --------------------------------------------------
 #                Spuštění aplikace
 # --------------------------------------------------
