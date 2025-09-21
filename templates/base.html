@@ -25,25 +25,28 @@
           <ul class="navbar-nav ms-auto">
             {% if current_user.is_authenticated %}
               <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('projects') }}">Projekty</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('log_time') }}">Logování</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('logs') }}">Záznamy</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/templates">Šablony</a>
+                <a class="nav-link" href="/">Dashboard</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="/calendar">Kalendář</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('export') }}">Export dat</a>
+                <a class="nav-link" href="/logs">Záznamy</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/templates">Šablony</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/projects">Projekty</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/reports">Reporty</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('reports_view', period='monthly') }}">Reporty</a>
+              </li>
+              <li class="nav-item">
+               <a class="nav-link" href="/export">Export</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('logout') }}">Odhlásit</a>
