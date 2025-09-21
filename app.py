@@ -852,10 +852,17 @@ def save_invoicing_settings():
                 settings = InvoiceSettings(project_id=project_id)
                 db.session.add(settings)
             
-            settings.idoklad_contact_id = request.form.get(f'contact_{project_id}')
-            settings.idoklad_item_name = request.form.get(f'item_{project_id}')
-            settings.hourly_rate = float(request.form.get(f'rate_{project_id}', 0))
-            settings.hours_per_md = float(request.form.get(f'md_{project_id}', 8))
+            # Ošetři prázdné hodnoty
+            contact_id = request.form.get(f'contact_{project_id}')
+            settings.idoklad_contact_id = int(contact_id) if contact_id and contact_id.strip() else None
+            
+            settings.idoklad_item_name = request.form.get(f'item_{project_id}') or None
+            
+            rate = request.form.get(f'rate_{project_id}')
+            settings.hourly_rate = float(rate) if rate and rate.strip() else None
+            
+            md = request.form.get(f'md_{project_id}')
+            settings.hours_per_md = float(md) if md and md.strip() else 8.0
     
     db.session.commit()
     flash('Nastavení uloženo')

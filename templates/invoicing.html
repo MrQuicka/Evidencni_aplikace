@@ -49,7 +49,7 @@
                     <td>
                         {% if not summary.is_invoiced %}
                         <button class="btn btn-sm btn-primary" 
-                                onclick="createInvoice('{{ summary.month }}', {{ summary.project_id }})">
+                                onclick="createInvoice(&quot;{{ summary.month }}&quot;, {{ summary.project_id }})">
                             <i class="bi bi-file-earmark-text"></i> Vytvořit fakturu
                         </button>
                         {% else %}
