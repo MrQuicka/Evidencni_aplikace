@@ -1,23 +1,7 @@
-<!DOCTYPE html>
-<html lang="cs">
-<head>
-    <meta charset="UTF-8">
-    <title>Šablony - Docházka</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">Docházka</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="/">Dashboard</a>
-                <a class="nav-link" href="/calendar">Kalendář</a>
-                <a class="nav-link active" href="/templates">Šablony</a>
-                <a class="nav-link" href="/projects">Projekty</a>
-            </div>
-        </div>
-    </nav>
+{% extends "base.html" %}
+{% block title %}templatelock %}
 
+{% block content %}
     <div class="container mt-4">
         <h2>Šablony aktivit</h2>
         
@@ -78,5 +62,4 @@
             {% endfor %}
         </div>
     </div>
-</body>
-</html>
+{% endblock %}
