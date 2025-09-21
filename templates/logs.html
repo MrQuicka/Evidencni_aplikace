@@ -2,221 +2,111 @@
 {% block title %}Záznamy{% endblock %}
 
 {% block content %}
-    <div class="container mt-4">
-        <h2>Záznamy docházky</h2>
-        
-        <!-- Filtry -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Filtry</h5>
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label for="filterProject" class="form-label">Projekt</label>
-                        <select class="form-select" id="filterProject">
-                            <option value="">Všechny projekty</option>
-                            {% for project in projects %}
-                            <option value="{{ project.id }}">{{ project.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="filterDateFrom" class="form-label">Od data</label>
-                        <input type="date" class="form-control" id="filterDateFrom">
-                    </div>
-                    <div class="col-md-3">
-                        <label for="filterDateTo" class="form-label">Do data</label>
-                        <input type="date" class="form-control" id="filterDateTo">
-                    </div>
-                    <div class="col-md-3">
-                        <label for="filterSearch" class="form-label">Hledat v poznámkách</label>
-                        <input type="text" class="form-control" id="filterSearch" placeholder="Text...">
-                    </div>
+<div class="container mt-4">
+    <h2>Záznamy docházky</h2>
+    
+    <!-- Filtry -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Filtry</h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="filterProject" class="form-label">Projekt</label>
+                    <select class="form-select" id="filterProject">
+                        <option value="">Všechny projekty</option>
+                        {% for project in projects %}
+                        <option value="{{ project.id }}">{{ project.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <div class="row mt-3">
-                    <div class="col">
-                        <button class="btn btn-primary" onclick="applyFilters()">
-                            <i class="bi bi-funnel"></i> Aplikovat filtry
-                        </button>
-                        <button class="btn btn-secondary" onclick="resetFilters()">
-                            <i class="bi bi-arrow-counterclockwise"></i> Resetovat
-                        </button>
-                        <span class="ms-3 text-muted" id="recordsInfo">
-                            Zobrazeno {{ logs|length }} záznamů
-                        </span>
-                    </div>
+                <div class="col-md-3">
+                    <label for="filterDateFrom" class="form-label">Od data</label>
+                    <input type="date" class="form-control" id="filterDateFrom">
+                </div>
+                <div class="col-md-3">
+                    <label for="filterDateTo" class="form-label">Do data</label>
+                    <input type="date" class="form-control" id="filterDateTo">
+                </div>
+                <div class="col-md-3">
+                    <label for="filterSearch" class="form-label">Hledat v poznámkách</label>
+                    <input type="text" class="form-control" id="filterSearch" placeholder="Text...">
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col">
+                    <button class="btn btn-primary" onclick="applyFilters()">
+                        <i class="bi bi-funnel"></i> Aplikovat filtry
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetFilters()">
+                        <i class="bi bi-arrow-counterclockwise"></i> Resetovat
+                    </button>
+                    <span class="ms-3 text-muted" id="recordsInfo">
+                        Zobrazeno {{ logs|length }} záznamů
+                    </span>
                 </div>
             </div>
         </div>
-
-        <!-- Tabulka záznamů -->
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Projekt</th>
-                        <th>Datum</th>
-                        <th>Začátek</th>
-                        <th>Konec</th>
-                        <th>Pauza</th>
-                        <th>Poznámka</th>
-                        <th>Hodiny</th>
-                        <th>Akce</th>
-                    </tr>
-                </thead>
-                <tbody id="logsTableBody">
-                    {% for log in logs %}
-                    <tr>
-                        <td>{{ log.project_name }}</td>
-                        <td>{{ log.start_time.strftime('%d.%m.%Y') if log.start_time else '-' }}</td>
-                        <td>{{ log.start_time.strftime('%H:%M') if log.start_time else '-' }}</td>
-                        <td>
-                            {% if log.end_time %}
-                                {{ log.end_time.strftime('%H:%M') }}
-                            {% else %}
-                                <span class="badge bg-success">Probíhá</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if log.pause_start and log.pause_end %}
-                                {{ log.pause_start.strftime('%H:%M') }} - {{ log.pause_end.strftime('%H:%M') }}
-                            {% elif log.pause_start %}
-                                <span class="badge bg-warning">Pauza</span>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if log.note %}
-                                <span title="{{ log.note }}">
-                                    {{ log.note[:30] }}{% if log.note|length > 30 %}...{% endif %}
-                                </span>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if log.hours %}
-                                <strong>{{ "%.2f"|format(log.hours) }}</strong>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{{ url_for('edit_log', log_id=log.id) }}" class="btn btn-outline-primary" title="Upravit">
-                                    <i class="bi bi-trash"></i>pencil"></i>
-                                </a>
-                                <form method="POST" action="{{ url_for('delete_log', log_id=log.id) }}" style="display: inline;">
-                                    <button type="submit" class="btn btn-outline-danger" title="Smazat" 
-                                            onclick="return confirm('Opravdu chcete smazat tento záznam?');">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Stránkování -->
-        {% if pagination %}
-        <nav aria-label="Stránkování">
-            <ul class="pagination justify-content-center">
-                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('logs', page=pagination.prev_num) if pagination.has_prev else '#' }}">
-                        Předchozí
-                    </a>
-                </li>
-                
-                {% for page_num in pagination.iter_pages(left_edge=1, left_current=2, right_current=3, right_edge=1) %}
-                    {% if page_num %}
-                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-                            <a class="page-link" href="{{ url_for('logs', page=page_num) }}">{{ page_num }}</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">...</span>
-                        </li>
-                    {% endif %}
-                {% endfor %}
-                
-                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('logs', page=pagination.next_num) if pagination.has_next else '#' }}">
-                        Další
-                    </a>
-                </li>
-            </ul>
-        </nav>
-        {% endif %}
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        let currentPage = 1;
-        const perPage = 50;
-
-        function applyFilters() {
-            const project = document.getElementById('filterProject').value;
-            const dateFrom = document.getElementById('filterDateFrom').value;
-            const dateTo = document.getElementById('filterDateTo').value;
-            const search = document.getElementById('filterSearch').value;
-            
-            fetchFilteredLogs(project, dateFrom, dateTo, search, 1);
-        }
-
-        function resetFilters() {
-            document.getElementById('filterProject').value = '';
-            document.getElementById('filterDateFrom').value = '';
-            document.getElementById('filterDateTo').value = '';
-            document.getElementById('filterSearch').value = '';
-            location.reload();
-        }
-
-        async function fetchFilteredLogs(projectId, dateFrom, dateTo, search, page) {
-            const params = new URLSearchParams({
-                page: page,
-                per_page: perPage
-            });
-            
-            if (projectId) params.append('project_id', projectId);
-            if (dateFrom) params.append('date_from', dateFrom);
-            if (dateTo) params.append('date_to', dateTo);
-            if (search) params.append('search', search);
-            
-            try {
-                const response = await fetch(`/api/logs?${params}`);
-                const data = await response.json();
-                
-                updateTable(data.logs);
-                updatePagination(data);
-                document.getElementById('recordsInfo').textContent = `Zobrazeno ${data.logs.length} z ${data.total} záznamů`;
-            } catch (error) {
-                console.error('Chyba při načítání dat:', error);
-            }
-        }
-
-        function updateTable(logs) {
-            const tbody = document.getElementById('logsTableBody');
-            tbody.innerHTML = '';
-            
-            logs.forEach(log => {
-                const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>${log.project_name}</td>
-                    <td>${log.start_time ? new Date(log.start_time).toLocaleDateString('cs-CZ') : '-'}</td>
-                    <td>${log.start_time ? new Date(log.start_time).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'}) : '-'}</td>
-                    <td>${log.end_time ? new Date(log.end_time).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'}) : '<span class="badge bg-success">Probíhá</span>'}</td>
-                    <td>${formatPause(log)}</td>
-                    <td title="${log.note || ''}">${log.note ? (log.note.substring(0, 30) + (log.note.length > 30 ? '...' : '')) : '-'}</td>
-                    <td><strong>${log.hours ? log.hours.toFixed(2) : '-'}</strong></td>
+    <!-- Tabulka záznamů -->
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Projekt</th>
+                    <th>Datum</th>
+                    <th>Začátek</th>
+                    <th>Konec</th>
+                    <th>Pauza</th>
+                    <th>Poznámka</th>
+                    <th>Hodiny</th>
+                    <th>Akce</th>
+                </tr>
+            </thead>
+            <tbody id="logsTableBody">
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.project_name }}</td>
+                    <td>{{ log.start_time.strftime('%d.%m.%Y') if log.start_time else '-' }}</td>
+                    <td>{{ log.start_time.strftime('%H:%M') if log.start_time else '-' }}</td>
                     <td>
-                        <div class="btn-group btn-group-sm">
-                            <a href="/logs/edit/${log.id}" class="btn btn-outline-primary" title="Upravit">
+                        {% if log.end_time %}
+                            {{ log.end_time.strftime('%H:%M') }}
+                        {% else %}
+                            <span class="badge bg-success">Probíhá</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.pause_start and log.pause_end %}
+                            {{ log.pause_start.strftime('%H:%M') }} - {{ log.pause_end.strftime('%H:%M') }}
+                        {% elif log.pause_start %}
+                            <span class="badge bg-warning">Pauza</span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.note %}
+                            <span title="{{ log.note }}">
+                                {{ log.note[:30] }}{% if log.note|length > 30 %}...{% endif %}
+                            </span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.hours %}
+                            <strong>{{ "%.2f"|format(log.hours) }}</strong>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="/logs/edit/{{ log.id }}" class="btn btn-outline-primary" title="Upravit">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form method="POST" action="/logs/delete/${log.id}" style="display: inline;">
+                            <form method="POST" action="/logs/delete/{{ log.id }}" style="display: inline;">
                                 <button type="submit" class="btn btn-outline-danger" title="Smazat" 
                                         onclick="return confirm('Opravdu chcete smazat tento záznam?');">
                                     <i class="bi bi-trash"></i>
@@ -224,24 +114,135 @@
                             </form>
                         </div>
                     </td>
-                `;
-            });
-        }
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-        function formatPause(log) {
-            if (log.pause_start && log.pause_end) {
-                const start = new Date(log.pause_start).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'});
-                const end = new Date(log.pause_end).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'});
-                return `${start} - ${end}`;
-            } else if (log.pause_start) {
-                return '<span class="badge bg-warning">Pauza</span>';
-            }
-            return '-';
-        }
+    <!-- Stránkování -->
+    {% if pagination %}
+    <nav aria-label="Stránkování">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('logs', page=pagination.prev_num) if pagination.has_prev else '#' }}">
+                    Předchozí
+                </a>
+            </li>
+            
+            {% for page_num in pagination.iter_pages(left_edge=1, left_current=2, right_current=3, right_edge=1) %}
+                {% if page_num %}
+                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('logs', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('logs', page=pagination.next_num) if pagination.has_next else '#' }}">
+                    Další
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
 
-        function updatePagination(data) {
-            // Zde by byla implementace aktualizace stránkování
-            // Pro jednoduchost zatím necháme původní stránkování
+{% block scripts %}
+<script>
+    let currentPage = 1;
+    const perPage = 50;
+
+    function applyFilters() {
+        const project = document.getElementById('filterProject').value;
+        const dateFrom = document.getElementById('filterDateFrom').value;
+        const dateTo = document.getElementById('filterDateTo').value;
+        const search = document.getElementById('filterSearch').value;
+        
+        fetchFilteredLogs(project, dateFrom, dateTo, search, 1);
+    }
+
+    function resetFilters() {
+        document.getElementById('filterProject').value = '';
+        document.getElementById('filterDateFrom').value = '';
+        document.getElementById('filterDateTo').value = '';
+        document.getElementById('filterSearch').value = '';
+        location.reload();
+    }
+
+    async function fetchFilteredLogs(projectId, dateFrom, dateTo, search, page) {
+        const params = new URLSearchParams({
+            page: page,
+            per_page: perPage
+        });
+        
+        if (projectId) params.append('project_id', projectId);
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+        if (search) params.append('search', search);
+        
+        try {
+            const response = await fetch(`/api/logs?${params}`);
+            const data = await response.json();
+            
+            updateTable(data.logs);
+            updatePagination(data);
+            document.getElementById('recordsInfo').textContent = `Zobrazeno ${data.logs.length} z ${data.total} záznamů`;
+        } catch (error) {
+            console.error('Chyba při načítání dat:', error);
         }
-    </script>
+    }
+
+    function updateTable(logs) {
+        const tbody = document.getElementById('logsTableBody');
+        tbody.innerHTML = '';
+        
+        logs.forEach(log => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td>${log.project_name}</td>
+                <td>${log.start_time ? new Date(log.start_time).toLocaleDateString('cs-CZ') : '-'}</td>
+                <td>${log.start_time ? new Date(log.start_time).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'}) : '-'}</td>
+                <td>${log.end_time ? new Date(log.end_time).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'}) : '<span class="badge bg-success">Probíhá</span>'}</td>
+                <td>${formatPause(log)}</td>
+                <td title="${log.note || ''}">${log.note ? (log.note.substring(0, 30) + (log.note.length > 30 ? '...' : '')) : '-'}</td>
+                <td><strong>${log.hours ? log.hours.toFixed(2) : '-'}</strong></td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <a href="/logs/edit/${log.id}" class="btn btn-outline-primary" title="Upravit">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="POST" action="/logs/delete/${log.id}" style="display: inline;" 
+                              onsubmit="return confirm('Opravdu chcete smazat tento záznam?');">
+                            <button type="submit" class="btn btn-outline-danger" title="Smazat">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            `;
+        });
+    }
+
+    function formatPause(log) {
+        if (log.pause_start && log.pause_end) {
+            const start = new Date(log.pause_start).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'});
+            const end = new Date(log.pause_end).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'});
+            return `${start} - ${end}`;
+        } else if (log.pause_start) {
+            return '<span class="badge bg-warning">Pauza</span>';
+        }
+        return '-';
+    }
+
+    function updatePagination(data) {
+        // Zde by byla implementace aktualizace stránkování
+        // Pro jednoduchost zatím necháme původní stránkování
+    }
+</script>
 {% endblock %}
