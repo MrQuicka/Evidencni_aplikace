@@ -109,6 +109,7 @@ fun ActiveLogCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StartWorkCard(
     projects: List<com.example.dochazka.domain.model.Project>,
