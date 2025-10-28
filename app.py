@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request, flash, Response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from sqlalchemy import func, text
@@ -15,6 +16,9 @@ from models import db, User, Project, LogEntry
 
 # Import kalendářového blueprintu
 from calendar_bp import bp as calendar_bp
+
+# Import mobilního API blueprintu
+from mobile_api import mobile_bp
 
 
 def parse_local_time(value):
@@ -42,6 +46,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'supertajnyklic'
 
+# Inicializace CORS pro mobilní aplikaci
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
 # Inicializace databáze a Flask-Login
 db.init_app(app)
 login_manager = LoginManager()
@@ -51,6 +58,9 @@ login_manager.init_app(app)
 # Import a registrace kalendářového Blueprintu
 from calendar_bp import bp as calendar_bp
 app.register_blueprint(calendar_bp)
+
+# Registrace mobilního API blueprintu
+app.register_blueprint(mobile_bp)
 
 
 # Inicializace Flask-Migrate
