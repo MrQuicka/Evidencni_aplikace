@@ -4,11 +4,13 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from sqlalchemy import func, text
+from sqlalchemy.exc import OperationalError
 import json
 import os
 import csv
 import io
 import xlsxwriter
+import time
 from dateutil.relativedelta import relativedelta  # pro posun v datech
 
 # Import modelů – předpokládáme, že models.py obsahuje třídy User, Project, LogEntry
@@ -448,23 +450,71 @@ def calendar_view():
     return render_template('calendar.html')
 
 # --------------------------------------------------
+#          Pomocná funkce pro čekání na databázi
+# --------------------------------------------------
+def wait_for_db(max_retries=30, retry_interval=2):
+    """
+    Čeká na připojení k databázi s retry logikou.
+    Řeší problém race condition při prvním spuštění Docker kontejnerů.
+
+    Args:
+        max_retries: Maximální počet pokusů o připojení (default: 30)
+        retry_interval: Interval mezi pokusy v sekundách (default: 2)
+
+    Returns:
+        bool: True pokud se podařilo připojit, jinak ukončí program
+    """
+    print(f"🔄 Čekání na připojení k databázi (max {max_retries} pokusů)...")
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Pokus o připojení k databázi
+            with app.app_context():
+                db.engine.connect()
+                print(f"✅ Databáze je připravená! (pokus {attempt}/{max_retries})")
+                return True
+        except OperationalError as e:
+            if attempt < max_retries:
+                print(f"⏳ Databáze ještě není připravená (pokus {attempt}/{max_retries}). "
+                      f"Čekám {retry_interval} sekund...")
+                time.sleep(retry_interval)
+            else:
+                print(f"❌ Nepodařilo se připojit k databázi po {max_retries} pokusech!")
+                print(f"   Chyba: {e}")
+                raise
+
+    return False
+
+# --------------------------------------------------
 #                Spuštění aplikace
 # --------------------------------------------------
 if __name__ == '__main__':
+    # Počkej na databázi před inicializací
+    wait_for_db()
+
+    # Inicializace databáze a admin uživatele
     with app.app_context():
+        print("📦 Vytváření databázových tabulek...")
         db.create_all()
+
+        # Vytvoření admin uživatele pokud neexistuje
         if not User.query.filter_by(username='admin').first():
+            print("👤 Vytváření admin uživatele...")
             user = User(username='admin', password=generate_password_hash('admin'))
             db.session.add(user)
             db.session.commit()
+            print("✅ Admin uživatel vytvořen (username: admin, password: admin)")
+        else:
+            print("ℹ️  Admin uživatel již existuje")
 
     # --------------------------------------------------
     #   Vypišme všechny zaregistrované routy
     # --------------------------------------------------
-    print("=== URL MAP ===")
+    print("\n=== URL MAP ===")
     for rule in app.url_map.iter_rules():
         print(f"{rule.endpoint:30s} -> {rule}")
-    print("===============")
+    print("===============\n")
 
+    print("🚀 Spouštím Flask aplikaci na http://0.0.0.0:5000")
     app.run(host='0.0.0.0', debug=True)
 

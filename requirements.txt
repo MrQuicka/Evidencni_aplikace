@@ -2,6 +2,7 @@ Flask>=1.1
 Flask-SQLAlchemy
 Flask-Login
 PyMySQL
+cryptography
 Werkzeug
 Flask-Migrate
 XlsxWriter
