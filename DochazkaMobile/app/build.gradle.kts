@@ -27,7 +27,7 @@ android {
 
     buildTypes {
         debug {
-            // Pro lokální development
+            // Pro lokální development na místní síti
             buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.191:5000/api/mobile/\"")
         }
 
@@ -37,8 +37,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Pro production - změň na svou URL když budeš mít
-            buildConfigField("String", "API_BASE_URL", "\"https://your-production-url.com/api/mobile/\"")
+            // Production URL přes Cloudflare Tunnel
+            buildConfigField("String", "API_BASE_URL", "\"https://dochazka.dev-nagauc.eu/api/mobile/\"")
         }
     }
 

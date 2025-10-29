@@ -46,10 +46,24 @@ ALL_COLUMNS = [
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI','mysql+pymysql://dochazka_user:dochazka_pass@db:3306/dochazka')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'supertajnyklic'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supertajnyklic')
 
-# Inicializace CORS pro mobilní aplikaci
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# Inicializace CORS pro mobilní aplikaci a webový přístup
+# Povoluje přístup z lokální sítě i z Cloudflare domény
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://dochazka.dev-nagauc.eu",
+            "https://*.dev-nagauc.eu",
+            "http://192.168.0.*:*",      # Lokální síť
+            "http://localhost:*",        # Lokální development
+            "http://127.0.0.1:*"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 # Inicializace databáze a Flask-Login
 db.init_app(app)
