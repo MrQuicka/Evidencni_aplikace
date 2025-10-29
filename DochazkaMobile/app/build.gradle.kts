@@ -21,17 +21,24 @@ android {
             useSupportLibrary = true
         }
 
-        // URL vašeho Cloudflare tunelu
-        buildConfigField("String", "API_BASE_URL", "\"https://your-cloudflare-tunnel.com/api/mobile/\"")
+        // Výchozí URL (může být přepsáno v buildTypes)
+        buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.191:5000/api/mobile/\"")
     }
 
     buildTypes {
+        debug {
+            // Pro lokální development
+            buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.191:5000/api/mobile/\"")
+        }
+
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Pro production - změň na svou URL když budeš mít
+            buildConfigField("String", "API_BASE_URL", "\"https://your-production-url.com/api/mobile/\"")
         }
     }
 
