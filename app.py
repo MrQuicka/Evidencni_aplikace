@@ -81,6 +81,13 @@ def load_user(user_id):
 #                  ROUTY A FUNKCE
 # --------------------------------------------------
 
+@app.route('/')
+def index():
+    """Redirect z root URL na login nebo projects podle stavu přihlášení"""
+    if current_user.is_authenticated:
+        return redirect(url_for('projects'))
+    return redirect(url_for('login'))
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
