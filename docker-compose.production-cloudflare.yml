@@ -1,0 +1,87 @@
+version: '3.8'
+
+# Docker Compose pro deployment s Cloudflare Tunnel
+# Struktura: /srv/docker/docker-compose.yml (tento soubor)
+#           /srv/docker/Evidencni_aplikace/ (aplikace)
+#           /srv/docker/cloudflare-tunnel-token.txt (token - NE V GITU!)
+
+services:
+  # MySQL databáze
+  db:
+    image: mysql:8.0
+    container_name: dochazka_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: dochazka
+      MYSQL_USER: dochazka_user
+      MYSQL_PASSWORD: dochazka_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./Evidencni_aplikace/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - dochazka_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 60s
+
+  # Flask backend aplikace
+  web:
+    build:
+      context: ./Evidencni_aplikace
+      dockerfile: Dockerfile
+    container_name: dochazka_web
+    restart: on-failure:5
+    ports:
+      - "5000:5000"
+    environment:
+      SQLALCHEMY_DATABASE_URI: mysql+pymysql://dochazka_user:dochazka_pass@db:3306/dochazka
+      FLASK_ENV: production
+      FLASK_DEBUG: 0
+      SECRET_KEY: ${SECRET_KEY:-supertajnyklic}  # Nastav přes environment variable!
+    volumes:
+      # Pro production - mount jen templates a static (ne celý kód)
+      - ./Evidencni_aplikace/templates:/app/templates:ro
+      - ./Evidencni_aplikace/static:/app/static:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - dochazka_network
+    command: python app.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Cloudflare Tunnel
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: dochazka_cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    environment:
+      # Token můžeš nastavit buď:
+      # 1. Přes environment variable: export TUNNEL_TOKEN="tvůj_token"
+      # 2. Nebo přímo zde (méně bezpečné): TUNNEL_TOKEN=tvůj_dlouhý_token_zde
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - dochazka_network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  dochazka_network:
+    driver: bridge

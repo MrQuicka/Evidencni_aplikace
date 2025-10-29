@@ -28,6 +28,12 @@ build/
 instance/
 .webassets-cache
 
+# Secrets & Tokens
+cloudflare-tunnel-token.txt
+*.token
+.env.local
+.env.production
+
 # Android / Gradle
 DochazkaMobile/.gradle/
 DochazkaMobile/build/
