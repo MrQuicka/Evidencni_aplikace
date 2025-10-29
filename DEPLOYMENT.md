@@ -1,6 +1,41 @@
 # Deployment Guide - Docházková aplikace
 
-## 🚀 Deployment do /srv/docker struktury
+> **📌 NOVÝ ZPŮSOB INSTALACE**
+> Pro deployment do `/srv/docker/` struktury kde `docker compose` spouštíš z `/srv/docker/` viz **[INSTALL_SRV_DOCKER.md](INSTALL_SRV_DOCKER.md)**
+
+## 🚀 Doporučený deployment do /srv/docker
+
+### Rychlá instalace (NOVÁ METODA)
+
+```bash
+# 1. Příprava
+cd /srv/docker
+
+# 2. Stažení aplikace
+sudo git clone https://github.com/MrQuicka/Evidencni_aplikace.git
+
+# 3. Zkopírování production docker-compose
+sudo cp Evidencni_aplikace/docker-compose.production.yml docker-compose.yml
+
+# 4. Spuštění z /srv/docker/
+sudo docker compose up -d
+```
+
+**Výsledná struktura:**
+```
+/srv/docker/
+├── docker-compose.yml         # Spouští se ODTUD
+└── Evidencni_aplikace/        # Aplikace zde
+    ├── app.py
+    ├── Dockerfile
+    └── ...
+```
+
+Pro podrobný průvodce viz **[INSTALL_SRV_DOCKER.md](INSTALL_SRV_DOCKER.md)**
+
+---
+
+## 🔧 Alternativní deployment - Spouštění z adresáře aplikace
 
 ### Krok 1: Příprava struktury adresářů
 
