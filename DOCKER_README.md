@@ -2,6 +2,10 @@
 
 Tento dokument popisuje, jak spustit docházkovou aplikaci pomocí Docker a Docker Compose.
 
+> **⚠️ DŮLEŽITÉ**: Všechny `docker compose` příkazy musí být spuštěny z adresáře, kde je umístěn soubor `docker-compose.yml`!
+>
+> **Pro deployment do `/srv/docker/` viz dokument [DEPLOYMENT.md](DEPLOYMENT.md)**
+
 ## 📋 Požadavky
 
 - Docker (verze 20.10 nebo vyšší)
@@ -9,7 +13,20 @@ Tento dokument popisuje, jak spustit docházkovou aplikaci pomocí Docker a Dock
 
 ## 🚀 Rychlý start
 
-### 1. Spuštění aplikace
+### 1. Přechod do adresáře aplikace
+
+```bash
+# Přejdi do adresáře s aplikací (příklad)
+cd /srv/docker/Evidencni_aplikace
+
+# Nebo pokud jsi v repository
+cd /cesta/k/Evidencni_aplikace
+
+# Ověř, že jsi ve správném adresáři
+ls docker-compose.yml  # Tento soubor musí existovat!
+```
+
+### 2. Spuštění aplikace
 
 ```bash
 # Spuštění všech služeb (databáze + web aplikace)
@@ -19,12 +36,12 @@ docker-compose up -d
 docker-compose logs -f web
 ```
 
-### 2. Přístup k aplikaci
+### 3. Přístup k aplikaci
 
 - **Webová aplikace**: http://localhost:5000
 - **MySQL databáze**: localhost:3306
 
-### 3. Výchozí přihlašovací údaje
+### 4. Výchozí přihlašovací údaje
 
 - **Username**: admin
 - **Password**: admin
