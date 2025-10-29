@@ -15,6 +15,31 @@ Thumbs.db
 .idea/
 
 # Python packaging
-build/
 dist/
 *.egg-info/
+
+# Android / Gradle
+DochazkaMobile/.gradle/
+DochazkaMobile/build/
+DochazkaMobile/app/build/
+DochazkaMobile/local.properties
+DochazkaMobile/.cxx/
+DochazkaMobile/*.iml
+DochazkaMobile/.externalNativeBuild/
+DochazkaMobile/.idea/
+DochazkaMobile/captures/
+DochazkaMobile/output.json
+DochazkaMobile/.navigation/
+
+# Android Studio
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Gradle files
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
