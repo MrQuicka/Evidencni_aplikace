@@ -5,11 +5,12 @@ FROM python:3.11-slim
 # Nastavení pracovního adresáře
 WORKDIR /app
 
-# Instalace systémových závislostí pro PyMySQL a další
+# Instalace systémových závislostí pro PyMySQL, curl pro health check a další
 RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
     pkg-config \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Kopírování requirements a instalace Python závislostí

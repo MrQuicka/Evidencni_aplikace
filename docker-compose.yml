@@ -20,9 +20,10 @@ services:
       - dochazka_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 60s
 
   # Flask backend aplikace
   web:
@@ -30,7 +31,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: dochazka_web
-    restart: unless-stopped
+    restart: on-failure:5
     ports:
       - "5000:5000"
     environment:
@@ -48,6 +49,12 @@ services:
     networks:
       - dochazka_network
     command: python app.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   mysql_data:
