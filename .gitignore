@@ -17,6 +17,16 @@ Thumbs.db
 # Python packaging
 dist/
 *.egg-info/
+build/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Flask
+instance/
+.webassets-cache
 
 # Android / Gradle
 DochazkaMobile/.gradle/
