@@ -223,7 +223,45 @@ Nebo pokud žádná činnost neběží:
 
 ---
 
-### 11. **POST /logs/start** - Rychlý start práce
+### 11. **POST /invoices/fakturoid** - Vytvořit fakturu ve Fakturoidu
+
+Na základě docházkových záznamů vytvoří fakturu přes API Fakturoidu v3. Je potřeba nastavit environment proměnné `FAKTUROID_ACCOUNT`, `FAKTUROID_EMAIL`, `FAKTUROID_API_KEY` a `FAKTUROID_USER_AGENT`.
+
+**Request:**
+```json
+{
+    "project_id": 1,
+    "subject_id": 123456,
+    "rate_per_hour": 1200.0,
+    "vat_rate": 21,
+    "from": "2024-01-01",
+    "to": "2024-01-31",
+    "description": "Práce leden",
+    "note": "Poznámka pro klienta",
+    "due_days": 14
+}
+```
+
+**Response (201):**
+```json
+{
+    "invoice": { "id": 999, "number": "2024-001", ... },
+    "total_hours": 160,
+    "lines": [
+        {
+            "name": "Práce na projektu Projekt A",
+            "quantity": 160,
+            "unit_name": "hod",
+            "unit_price": 1200.0,
+            "vat_rate": 21
+        }
+    ]
+}
+```
+
+---
+
+### 12. **POST /logs/start** - Rychlý start práce
 
 **Request:**
 ```json
@@ -251,7 +289,7 @@ Nebo pokud žádná činnost neběží:
 
 ---
 
-### 12. **POST /logs/stop** - Ukončit práci
+### 13. **POST /logs/stop** - Ukončit práci
 
 Ukončí aktuálně běžící činnost nastavením `end_time`.
 
@@ -272,7 +310,7 @@ Ukončí aktuálně běžící činnost nastavením `end_time`.
 
 ---
 
-### 13. **GET /sync/status** - Kontrola spojení
+### 14. **GET /sync/status** - Kontrola spojení
 
 Jednoduchý endpoint pro kontrolu, zda server běží.
 

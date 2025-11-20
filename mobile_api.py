@@ -6,6 +6,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 from models import db, User, Project, LogEntry
 from auth_api import generate_jwt_token, jwt_required
+from fakturoid_client import FakturoidClient
 
 mobile_bp = Blueprint('mobile_api', __name__, url_prefix='/api/mobile')
 
@@ -90,6 +91,18 @@ def api_register():
         'user_id': new_user.id,
         'username': new_user.username
     }), 201
+
+
+def _calculate_hours(log: LogEntry) -> float:
+    if not log.end_time:
+        return 0
+
+    duration = log.end_time - log.start_time
+
+    if log.pause_start and log.pause_end:
+        duration -= log.pause_end - log.pause_start
+
+    return max(duration.total_seconds() / 3600, 0)
 
 
 # ========== PROJEKTY ==========
@@ -490,3 +503,89 @@ def api_sync_status(current_user):
         'server_time': datetime.utcnow().isoformat(),
         'user_id': current_user.id
     }), 200
+
+
+# ========== FAKTUROID INTEGRACE ==========
+
+
+@mobile_bp.route('/invoices/fakturoid', methods=['POST'])
+@jwt_required
+def api_create_fakturoid_invoice(current_user):
+    """
+    Vytvoří fakturu ve Fakturoidu na základě odpracovaných hodin.
+
+    Request body:
+    {
+        "project_id": 1,
+        "subject_id": 123456,
+        "rate_per_hour": 1200.0,
+        "vat_rate": 21,               // volitelné, default 21
+        "from": "2024-01-01",        // volitelné, ISO datum
+        "to": "2024-01-31",          // volitelné, ISO datum
+        "description": "Práce leden", // volitelné
+        "note": "Poznámka",           // volitelné
+        "due_days": 14                // volitelné
+    }
+    """
+
+    data = request.get_json() or {}
+
+    required_fields = ['project_id', 'subject_id', 'rate_per_hour']
+    missing = [field for field in required_fields if field not in data]
+    if missing:
+        return jsonify({'error': f"Chybějící pole: {', '.join(missing)}"}), 400
+
+    project = Project.query.get(data['project_id'])
+    if not project or project.user_id != current_user.id:
+        return jsonify({'error': 'Neplatný projekt'}), 400
+
+    query = LogEntry.query.filter_by(project_id=project.id, user_id=current_user.id)
+
+    for key, comparator in [('from', LogEntry.start_time.__ge__), ('to', LogEntry.start_time.__le__)]:
+        if data.get(key):
+            try:
+                dt = datetime.fromisoformat(data[key])
+                query = query.filter(comparator(dt))
+            except ValueError:
+                return jsonify({'error': f'Neplatné datum v poli {key}'}), 400
+
+    logs = query.all()
+    if not logs:
+        return jsonify({'error': 'Žádné záznamy pro fakturaci'}), 400
+
+    total_hours = sum(_calculate_hours(log) for log in logs)
+    if total_hours <= 0:
+        return jsonify({'error': 'Nejsou dostupné ukončené záznamy s časem'}), 400
+
+    try:
+        client = FakturoidClient.from_env()
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 500
+
+    description = data.get('description') or f"Práce na projektu {project.name}"
+    vat_rate = int(data.get('vat_rate', 21))
+    lines = client.build_lines_from_hours(
+        description=description,
+        total_hours=total_hours,
+        rate_per_hour=float(data['rate_per_hour']),
+        vat_rate=vat_rate,
+    )
+
+    payload = {
+        'subject_id': data['subject_id'],
+        'lines': lines,
+        'due': data.get('due_days', 14),
+        'note': data.get('note', ''),
+    }
+
+    for optional_field in ['issued_on', 'number']:
+        if data.get(optional_field):
+            payload[optional_field] = data[optional_field]
+
+    invoice = client.create_invoice(payload)
+
+    return jsonify({
+        'invoice': invoice,
+        'total_hours': round(total_hours, 2),
+        'lines': lines
+    }), 201

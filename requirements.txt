@@ -9,4 +9,5 @@ XlsxWriter
 python-dateutil
 PyJWT>=2.0.0
 Flask-CORS
+requests
 
