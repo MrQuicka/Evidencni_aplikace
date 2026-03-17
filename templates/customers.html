@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Odběratelé{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-people"></i> Odběratelé</h2>
+        <div>
+            <a href="{{ url_for('faktury.customer_create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Nový odběratel
+            </a>
+            <a href="{{ url_for('faktury.invoice_list') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Zpět na faktury
+            </a>
+        </div>
+    </div>
+
+    {% if customers %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Název</th>
+                    <th>IČ</th>
+                    <th>Město</th>
+                    <th>E-mail</th>
+                    <th>Faktur</th>
+                    <th>Akce</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in customers %}
+                <tr>
+                    <td><strong>{{ c.company_name }}</strong></td>
+                    <td>{{ c.ic or '—' }}</td>
+                    <td>{{ c.city or '—' }}</td>
+                    <td>{{ c.email or '—' }}</td>
+                    <td>{{ c.invoices|length }}</td>
+                    <td>
+                        <a href="{{ url_for('faktury.customer_edit', id=c.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        {% if not c.invoices %}
+                        <form method="POST" action="{{ url_for('faktury.customer_delete', id=c.id) }}" class="d-inline"
+                              onsubmit="return confirm('Smazat odběratele {{ c.company_name }}?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Zatím nemáte žádné odběratele.
+        <a href="{{ url_for('faktury.customer_create') }}">Přidejte prvního</a>.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

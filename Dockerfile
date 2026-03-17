@@ -1,6 +1,12 @@
 FROM python:3.9-slim
 WORKDIR /app
 
+# Systémové závislosti pro WeasyPrint (PDF generování)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libcairo2 libpango-1.0-0 libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 libffi-dev shared-mime-info \
+    && rm -rf /var/lib/apt/lists/*
+
 # Instaluj závislosti
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

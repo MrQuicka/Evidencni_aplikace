@@ -50,8 +50,12 @@
                         {% if not summary.is_invoiced %}
                         <button class="btn btn-sm btn-primary"
                                 onclick="createInvoice(&quot;{{ summary.month }}&quot;, {{ summary.zakazka_id }}, &quot;{{ summary.zakazka_name }}&quot;)">
-                            <i class="bi bi-file-earmark-text"></i> Vytvořit fakturu
+                            <i class="bi bi-file-earmark-text"></i> iDoklad
                         </button>
+                        <a class="btn btn-sm btn-success"
+                           href="/faktury/z-dochazky?month={{ summary.month }}&zakazka_id={{ summary.zakazka_id }}">
+                            <i class="bi bi-file-pdf"></i> Lokální faktura
+                        </a>
                         {% else %}
                         <span class="text-muted">-</span>
                         {% endif %}

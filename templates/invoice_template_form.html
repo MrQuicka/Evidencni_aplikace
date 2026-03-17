@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Upravit šablonu' if template else 'Nová šablona' }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="bi bi-copy"></i> {{ 'Upravit šablonu' if template else 'Nová šablona faktury' }}</h2>
+    <p class="text-muted">Šablona umožňuje rychle vytvářet faktury s předvyplněnými údaji a položkami.</p>
+
+    <form method="POST">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header"><h5>Základní údaje</h5></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Název šablony *</label>
+                            <input type="text" class="form-control" id="name" name="name"
+                                   value="{{ template.name if template else '' }}" required
+                                   placeholder="Např. Měsíční faktura pro CoolPeople">
+                        </div>
+                        <div class="mb-3">
+                            <label for="customer_id" class="form-label">Odběratel</label>
+                            <select class="form-select" id="customer_id" name="customer_id">
+                                <option value="">— Bez předvyplnění —</option>
+                                {% for c in customers %}
+                                <option value="{{ c.id }}"
+                                    {% if template and template.customer_id == c.id %}selected{% endif %}>
+                                    {{ c.company_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-4 mb-3">
+                                <label for="default_due_days" class="form-label">Splatnost (dní)</label>
+                                <input type="number" class="form-control" id="default_due_days" name="default_due_days"
+                                       value="{{ template.default_due_days if template else 14 }}" min="1">
+                            </div>
+                            <div class="col-4 mb-3">
+                                <label for="default_payment_method" class="form-label">Platba</label>
+                                <select class="form-select" id="default_payment_method" name="default_payment_method">
+                                    {% set pm = template.default_payment_method if template else 'Převodem' %}
+                                    <option value="Převodem" {{ 'selected' if pm == 'Převodem' }}>Převodem</option>
+                                    <option value="Hotově" {{ 'selected' if pm == 'Hotově' }}>Hotově</option>
+                                    <option value="Kartou" {{ 'selected' if pm == 'Kartou' }}>Kartou</option>
+                                </select>
+                            </div>
+                            <div class="col-4 mb-3">
+                                <label for="default_constant_symbol" class="form-label">Konst. symbol</label>
+                                <input type="text" class="form-control" id="default_constant_symbol" name="default_constant_symbol"
+                                       value="{{ template.default_constant_symbol if template else '0308' }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="note" class="form-label">Poznámka</label>
+                            <textarea class="form-control" id="note" name="note" rows="2"
+                            >{{ template.note if template else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Vzorové položky</h5>
+                        <button type="button" class="btn btn-sm btn-success" onclick="addTemplateItem()">
+                            <i class="bi bi-plus-lg"></i> Přidat
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="templateItemsContainer">
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <small class="text-muted">Nechte počet prázdný pro položky, kde se počet vyplní až při vytváření faktury (např. odpracované hodiny).</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 mb-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i> {{ 'Uložit změny' if template else 'Vytvořit šablonu' }}
+            </button>
+            <a href="{{ url_for('faktury.template_list') }}" class="btn btn-secondary">Zrušit</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let templateItemIdx = 0;
+
+function addTemplateItem(desc = '', qty = '', unit = 'hod', price = '') {
+    const container = document.getElementById('templateItemsContainer');
+    const div = document.createElement('div');
+    div.className = 'p-3 border-bottom';
+    div.id = 'tpl_item_' + templateItemIdx;
+    div.innerHTML = `
+        <div class="row g-2 align-items-end">
+            <div class="col-5">
+                <label class="form-label form-label-sm">Popis</label>
+                <input type="text" class="form-control form-control-sm" name="item_description[]"
+                       value="${escapeHtml(desc)}" placeholder="Název služby">
+            </div>
+            <div class="col-2">
+                <label class="form-label form-label-sm">Počet</label>
+                <input type="number" class="form-control form-control-sm" name="item_quantity[]"
+                       value="${qty}" step="0.01" placeholder="—">
+            </div>
+            <div class="col-1">
+                <label class="form-label form-label-sm">Jedn.</label>
+                <input type="text" class="form-control form-control-sm" name="item_unit[]"
+                       value="${escapeHtml(unit)}">
+            </div>
+            <div class="col-3">
+                <label class="form-label form-label-sm">Cena/j.</label>
+                <input type="number" class="form-control form-control-sm" name="item_unit_price[]"
+                       value="${price}" step="0.01">
+            </div>
+            <div class="col-1">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.border-bottom').remove()">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+    templateItemIdx++;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    {% if template and template.items_json %}
+    const items = {{ template.items_json | safe }};
+    items.forEach(item => {
+        addTemplateItem(item.description || '', item.quantity || '', item.unit || 'hod', item.unit_price || '');
+    });
+    {% else %}
+    addTemplateItem();
+    {% endif %}
+});
+</script>
+{% endblock %}

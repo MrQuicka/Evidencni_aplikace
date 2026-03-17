@@ -52,6 +52,9 @@
                <a class="nav-link" href="/invoicing">Fakturace</a>
               </li>
               <li class="nav-item">
+               <a class="nav-link" href="/faktury/">Faktury</a>
+              </li>
+              <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('logout') }}">Odhlásit</a>
               </li>
               <li class="nav-item">
@@ -99,6 +102,7 @@
           <a href="/reports" class="lcars-nav-btn lcars-c-lavender">Reporty</a>
           <a href="/export" class="lcars-nav-btn lcars-c-tan">Export</a>
           <a href="/invoicing" class="lcars-nav-btn lcars-c-peach">Fakturace</a>
+          <a href="/faktury/" class="lcars-nav-btn lcars-c-salmon">Faktury</a>
           <a href="{{ url_for('logout') }}" class="lcars-nav-btn lcars-c-rust">Odhlásit</a>
         {% else %}
           <a href="{{ url_for('login') }}" class="lcars-nav-btn lcars-c-lavender">Přihlásit</a>

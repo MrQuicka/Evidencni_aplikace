@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Šablony faktur{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-copy"></i> Šablony faktur</h2>
+        <div>
+            <a href="{{ url_for('faktury.template_create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Nová šablona
+            </a>
+            <a href="{{ url_for('faktury.invoice_list') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Zpět na faktury
+            </a>
+        </div>
+    </div>
+
+    {% if templates %}
+    <div class="row">
+        {% for t in templates %}
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>{{ t.name }}</strong>
+                    <span class="badge bg-info">{{ t.default_due_days }} dní</span>
+                </div>
+                <div class="card-body">
+                    {% if t.customer %}
+                    <p class="mb-1"><i class="bi bi-person"></i> {{ t.customer.company_name }}</p>
+                    {% endif %}
+                    <p class="mb-1 text-muted"><i class="bi bi-credit-card"></i> {{ t.default_payment_method }}</p>
+                    {% if t.items_json %}
+                    <p class="mb-0 text-muted"><i class="bi bi-list"></i> {{ t.items_count }} položek</p>
+                    {% endif %}
+                    {% if t.note %}
+                    <p class="mb-0 mt-1"><small class="text-muted">{{ t.note[:80] }}{% if t.note|length > 80 %}...{% endif %}</small></p>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('faktury.template_use', id=t.id) }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-file-earmark-plus"></i> Použít
+                    </a>
+                    <a href="{{ url_for('faktury.template_edit', id=t.id) }}" class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <form method="POST" action="{{ url_for('faktury.template_delete', id=t.id) }}" class="d-inline"
+                          onsubmit="return confirm('Smazat šablonu {{ t.name }}?')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Zatím nemáte žádné šablony.
+        Šablony umožňují rychle vytvářet opakované faktury s předvyplněnými údaji.
+        <a href="{{ url_for('faktury.template_create') }}">Vytvořte první šablonu</a>.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

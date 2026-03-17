@@ -10,12 +10,16 @@ import io
 import xlsxwriter
 from dateutil.relativedelta import relativedelta
 from models import db, User, Zakazka, Projekt, LogEntry, TaskTemplate, Project
-from models_invoice import InvoiceSettings, UserSettings, InvoiceHistory
+from models_invoice import (InvoiceSettings, UserSettings, InvoiceHistory,
+                            SupplierProfile, Customer, LocalInvoice, LocalInvoiceItem,
+                            InvoiceTemplate, InvoiceCounter)
 from idoklad_api import IDokladAPI
 
 
 # Import kalendářového blueprintu
 from calendar_bp import bp as calendar_bp
+# Import blueprintu pro lokální faktury
+from invoice_bp import bp as invoice_bp
 
 
 def parse_local_time(value):
@@ -50,6 +54,8 @@ login_manager.init_app(app)
 
 # Registrace kalendářového Blueprintu
 app.register_blueprint(calendar_bp)
+# Registrace blueprintu pro lokální faktury
+app.register_blueprint(invoice_bp)
 
 # Inicializace Flask-Migrate
 from flask_migrate import Migrate

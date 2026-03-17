@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editovat fakturu' if invoice else 'Nová faktura' }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="bi bi-file-earmark-plus"></i> {{ 'Editovat fakturu ' + invoice.invoice_number if invoice else 'Nová faktura' }}</h2>
+
+    <form method="POST" id="invoiceForm">
+        {% if prefill and prefill.get('source_month') %}
+            <input type="hidden" name="source_month" value="{{ prefill.source_month }}">
+            <input type="hidden" name="source_zakazka_id" value="{{ prefill.source_zakazka_id }}">
+        {% elif invoice and invoice.source_month %}
+            <input type="hidden" name="source_month" value="{{ invoice.source_month }}">
+            <input type="hidden" name="source_zakazka_id" value="{{ invoice.source_zakazka_id }}">
+        {% endif %}
+        {% if prefill and prefill.get('template_id') %}
+            <input type="hidden" name="template_id" value="{{ prefill.template_id }}">
+        {% elif invoice and invoice.template_id %}
+            <input type="hidden" name="template_id" value="{{ invoice.template_id }}">
+        {% endif %}
+
+        <div class="row">
+            <!-- Levý sloupec -->
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header"><h5>Odběratel a data</h5></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="customer_id" class="form-label">Odběratel *</label>
+                            <select class="form-select" id="customer_id" name="customer_id" required>
+                                <option value="">— Vyberte odběratele —</option>
+                                {% for c in customers %}
+                                <option value="{{ c.id }}"
+                                    {% if (invoice and invoice.customer_id == c.id) or (prefill and prefill.get('customer_id') == c.id) %}selected{% endif %}>
+                                    {{ c.company_name }}{% if c.ic %} (IČ: {{ c.ic }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">
+                                <a href="{{ url_for('faktury.customer_create') }}">+ Přidat nového odběratele</a>
+                            </small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label for="date_issued" class="form-label">Datum vystavení</label>
+                                <input type="date" class="form-control" id="date_issued" name="date_issued"
+                                       value="{{ invoice.date_issued.strftime('%Y-%m-%d') if invoice else today }}">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label for="date_due" class="form-label">Datum splatnosti</label>
+                                <input type="date" class="form-control" id="date_due" name="date_due"
+                                       value="{{ invoice.date_due.strftime('%Y-%m-%d') if invoice else due_date }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header"><h5>Platební údaje</h5></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label for="payment_method" class="form-label">Způsob platby</label>
+                                <select class="form-select" id="payment_method" name="payment_method">
+                                    {% set pm = (invoice.payment_method if invoice else (prefill.get('payment_method', 'Převodem') if prefill else 'Převodem')) %}
+                                    <option value="Převodem" {{ 'selected' if pm == 'Převodem' }}>Převodem</option>
+                                    <option value="Hotově" {{ 'selected' if pm == 'Hotově' }}>Hotově</option>
+                                    <option value="Kartou" {{ 'selected' if pm == 'Kartou' }}>Kartou</option>
+                                </select>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label for="constant_symbol" class="form-label">Konstantní symbol</label>
+                                <input type="text" class="form-control" id="constant_symbol" name="constant_symbol"
+                                       value="{{ invoice.constant_symbol if invoice else (prefill.get('constant_symbol', '0308') if prefill else '0308') }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header"><h5>Poznámka</h5></div>
+                    <div class="card-body">
+                        <textarea class="form-control" name="note" rows="2"
+                        >{{ invoice.note if invoice else (prefill.get('note', '') if prefill else '') }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pravý sloupec - položky -->
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Položky faktury</h5>
+                        <button type="button" class="btn btn-sm btn-success" onclick="addItem()">
+                            <i class="bi bi-plus-lg"></i> Přidat položku
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="itemsContainer">
+                            <!-- Položky se vloží JavaScriptem -->
+                        </div>
+                    </div>
+                    <div class="card-footer text-end">
+                        <strong>Celkem: <span id="totalAmount">0,00</span> Kč</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 mb-4">
+            <button type="submit" name="action" value="draft" class="btn btn-secondary">
+                <i class="bi bi-save"></i> Uložit jako koncept
+            </button>
+            <button type="submit" name="action" value="issue" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Vystavit fakturu
+            </button>
+            <a href="{{ url_for('faktury.invoice_list') }}" class="btn btn-outline-secondary">Zrušit</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let itemIndex = 0;
+
+function addItem(desc = '', qty = '', unit = 'hod', price = '') {
+    const container = document.getElementById('itemsContainer');
+    const div = document.createElement('div');
+    div.className = 'item-row p-3 border-bottom';
+    div.id = 'item_' + itemIndex;
+    div.innerHTML = `
+        <div class="row g-2 align-items-end">
+            <div class="col-12 mb-2">
+                <label class="form-label form-label-sm">Popis</label>
+                <input type="text" class="form-control form-control-sm" name="item_description[]"
+                       value="${escapeHtml(desc)}" placeholder="Popis služby/zboží" required>
+            </div>
+            <div class="col-3">
+                <label class="form-label form-label-sm">Počet</label>
+                <input type="number" class="form-control form-control-sm item-qty" name="item_quantity[]"
+                       value="${qty}" step="0.01" min="0" placeholder="1" onchange="recalculate()">
+            </div>
+            <div class="col-2">
+                <label class="form-label form-label-sm">Jedn.</label>
+                <input type="text" class="form-control form-control-sm" name="item_unit[]"
+                       value="${escapeHtml(unit)}" placeholder="hod">
+            </div>
+            <div class="col-3">
+                <label class="form-label form-label-sm">Cena/j.</label>
+                <input type="number" class="form-control form-control-sm item-price" name="item_unit_price[]"
+                       value="${price}" step="0.01" min="0" placeholder="0" onchange="recalculate()">
+            </div>
+            <div class="col-3">
+                <label class="form-label form-label-sm">Celkem</label>
+                <div class="d-flex align-items-center">
+                    <span class="item-total fw-bold me-2">0,00</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem('item_${itemIndex}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+    itemIndex++;
+    recalculate();
+}
+
+function removeItem(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+    recalculate();
+}
+
+function recalculate() {
+    let total = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+        const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
+        const itemTotal = qty * price;
+        total += itemTotal;
+        const totalSpan = row.querySelector('.item-total');
+        if (totalSpan) totalSpan.textContent = formatCZK(itemTotal);
+    });
+    document.getElementById('totalAmount').textContent = formatCZK(total);
+}
+
+function formatCZK(amount) {
+    return amount.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Inicializace - načti existující položky nebo z prefill
+document.addEventListener('DOMContentLoaded', function() {
+    {% if invoice and invoice.items %}
+        {% for item in invoice.items %}
+        addItem('{{ item.description|e }}', '{{ item.quantity }}', '{{ item.unit|e }}', '{{ item.unit_price }}');
+        {% endfor %}
+    {% elif prefill and prefill.get('items') %}
+        {% for item in prefill.items %}
+        addItem('{{ item.description|e }}', '{{ item.quantity or "" }}', '{{ item.unit|default("hod")|e }}', '{{ item.unit_price or "" }}');
+        {% endfor %}
+    {% else %}
+        addItem();
+    {% endif %}
+
+    // Nastav dnešní datum pokud chybí
+    const issuedInput = document.getElementById('date_issued');
+    if (!issuedInput.value) {
+        issuedInput.value = new Date().toISOString().split('T')[0];
+    }
+    const dueInput = document.getElementById('date_due');
+    if (!dueInput.value) {
+        const due = new Date();
+        due.setDate(due.getDate() + {{ prefill.due_days if prefill and prefill.get('due_days') else 14 }});
+        dueInput.value = due.toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}

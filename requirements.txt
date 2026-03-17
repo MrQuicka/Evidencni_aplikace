@@ -9,3 +9,7 @@ python-dotenv==1.0.1
 SQLAlchemy==2.0.21
 pymysql==1.1.1
 requests==2.31.0
+WeasyPrint>=62.0
+qrcode[pil]>=8.0
+python-barcode[images]>=0.15
+Pillow>=10.0

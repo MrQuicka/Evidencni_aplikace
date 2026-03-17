@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    size: A4;
+    margin: 15mm 15mm 20mm 15mm;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DejaVu Sans', Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+    color: #333;
+    line-height: 1.4;
+  }
+
+  /* Hlavní layout */
+  .invoice-page {
+    width: 100%;
+    position: relative;
+  }
+
+  /* Sekční popisky na levém okraji */
+  .section-label {
+    position: absolute;
+    left: -2mm;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 7pt;
+    font-weight: bold;
+    color: #fff;
+    background: #5bc0de;
+    padding: 3mm 1.5mm;
+    letter-spacing: 1px;
+    border-radius: 0 3px 3px 0;
+    text-transform: uppercase;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5mm;
+    padding-left: 12mm;
+  }
+  .header-left { flex: 1; }
+  .header-right { text-align: right; }
+  .invoice-title {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 2mm;
+  }
+  .invoice-number {
+    font-size: 14pt;
+    font-weight: bold;
+    border: 1px solid #333;
+    padding: 2mm 4mm;
+    display: inline-block;
+    margin-bottom: 2mm;
+  }
+
+  /* ISDOC badge */
+  .isdoc-badge {
+    font-size: 7pt;
+    color: #999;
+    margin-bottom: 1mm;
+  }
+
+  /* Dodavatel */
+  .section-identifikace {
+    position: relative;
+    padding-left: 12mm;
+    min-height: 60mm;
+    margin-bottom: 5mm;
+  }
+  .section-identifikace .section-label {
+    top: 0;
+    height: 58mm;
+  }
+  .supplier-info { margin-bottom: 4mm; }
+  .supplier-info .label { font-weight: bold; font-size: 9pt; }
+  .supplier-name { font-weight: bold; font-size: 11pt; }
+
+  /* Kontakt + Odběratel */
+  .contact-buyer-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10mm;
+    margin-top: 3mm;
+  }
+  .contact-info { flex: 1; }
+  .buyer-info {
+    flex: 1;
+    border: 1px solid #ddd;
+    padding: 3mm;
+    background: #fafafa;
+  }
+  .buyer-info .label { font-weight: bold; font-size: 9pt; margin-bottom: 1mm; }
+  .buyer-name { font-weight: bold; font-size: 10pt; }
+
+  /* Data */
+  .dates-row {
+    margin: 4mm 0;
+    padding-left: 12mm;
+    font-size: 9pt;
+  }
+  .dates-row strong { font-size: 10pt; }
+
+  /* Platební údaje */
+  .section-platebni {
+    position: relative;
+    padding-left: 12mm;
+    background: #eaf7fc;
+    padding-top: 3mm;
+    padding-bottom: 3mm;
+    padding-right: 3mm;
+    margin-bottom: 4mm;
+    min-height: 30mm;
+  }
+  .section-platebni .section-label {
+    top: 0;
+    height: 28mm;
+    background: #5bc0de;
+  }
+  .payment-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .payment-left { flex: 1.2; }
+  .payment-center { flex: 0.8; }
+  .payment-right {
+    flex: 1;
+    text-align: right;
+  }
+  .payment-label { font-size: 8pt; color: #666; font-weight: bold; }
+  .payment-value { font-size: 9pt; font-weight: bold; color: #333; }
+  .amount-label { font-weight: bold; color: #333; }
+  .amount-value {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #d9534f;
+  }
+  .qr-code { margin-top: 1mm; }
+  .qr-code img { width: 25mm; height: 25mm; }
+  .qr-label { font-size: 7pt; color: #666; text-align: center; }
+
+  /* Fakturujeme vám */
+  .section-fakturujeme {
+    position: relative;
+    padding-left: 12mm;
+    min-height: 35mm;
+    margin-bottom: 4mm;
+  }
+  .section-fakturujeme .section-label {
+    top: 0;
+    height: 33mm;
+  }
+  .legal-note {
+    font-size: 8pt;
+    color: #666;
+    margin-bottom: 2mm;
+  }
+
+  /* Tabulka položek */
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2mm;
+    font-size: 9pt;
+  }
+  .items-table thead th {
+    background: #f5f5f5;
+    border-bottom: 2px solid #ddd;
+    padding: 2mm;
+    text-align: left;
+    font-size: 8pt;
+    font-weight: bold;
+  }
+  .items-table thead th:nth-child(2),
+  .items-table thead th:nth-child(3),
+  .items-table thead th:nth-child(4) {
+    text-align: right;
+  }
+  .items-table tbody td {
+    padding: 2mm;
+    border-bottom: 1px solid #eee;
+  }
+  .items-table tbody td:nth-child(2),
+  .items-table tbody td:nth-child(3),
+  .items-table tbody td:nth-child(4) {
+    text-align: right;
+  }
+  .items-table tbody td:last-child {
+    font-weight: bold;
+  }
+
+  /* Upozornění */
+  .warning-text {
+    font-size: 8pt;
+    color: #999;
+    margin-top: 5mm;
+    padding-left: 12mm;
+    font-style: italic;
+  }
+
+  /* Rekapitulace */
+  .section-rekapitulace {
+    position: relative;
+    padding-left: 12mm;
+    margin-top: 5mm;
+    min-height: 20mm;
+  }
+  .section-rekapitulace .section-label {
+    top: 0;
+    height: 18mm;
+  }
+  .total-box {
+    float: right;
+    background: #5bc0de;
+    color: #fff;
+    padding: 4mm 8mm;
+    text-align: right;
+    min-width: 60mm;
+  }
+  .total-label {
+    font-size: 10pt;
+    font-weight: bold;
+  }
+  .total-value {
+    font-size: 14pt;
+    font-weight: bold;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 15mm;
+    padding-top: 3mm;
+    border-top: 1px solid #ddd;
+    font-size: 7pt;
+    color: #999;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Barcode */
+  .barcode img {
+    height: 10mm;
+  }
+</style>
+</head>
+<body>
+<div class="invoice-page">
+
+  <!-- HLAVIČKA -->
+  <div class="header">
+    <div class="header-left">
+      <div class="isdoc-badge">FAKTURA</div>
+      <div class="supplier-info">
+        <div class="label">Dodavatel</div>
+        <div class="supplier-name">{{ supplier.company_name }}</div>
+        {% if supplier.street %}<div>{{ supplier.street }}</div>{% endif %}
+        {% if supplier.zip_code or supplier.city %}
+          <div>{{ supplier.zip_code }} {{ supplier.city }}</div>
+        {% endif %}
+        {% if supplier.country and supplier.country != 'Česká republika' %}
+          <div>{{ supplier.country }}</div>
+        {% endif %}
+        {% if supplier.ic %}<div>IČ: {{ supplier.ic }}</div>{% endif %}
+        {% if not supplier.is_vat_payer %}
+          <div>Nejsme plátci DPH</div>
+        {% elif supplier.dic %}
+          <div>DIČ: {{ supplier.dic }}</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="invoice-title">Faktura</div>
+      <div class="invoice-number">{{ invoice.invoice_number }}</div>
+      {% if barcode_base64 %}
+      <div class="barcode">
+        <img src="data:image/png;base64,{{ barcode_base64 }}" alt="barcode">
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- IDENTIFIKAČNÍ ÚDAJE -->
+  <div class="section-identifikace">
+    <div class="section-label">IDENTIFIKAČNÍ ÚDAJE</div>
+    <div class="contact-buyer-row">
+      <div class="contact-info">
+        <div class="label" style="font-weight:bold; margin-bottom:2mm;">Kontaktní údaje</div>
+        {% if supplier.email %}<div>E-mail: &nbsp; {{ supplier.email }}</div>{% endif %}
+        {% if supplier.phone %}<div>Telefon: &nbsp; {{ supplier.phone }}</div>{% endif %}
+      </div>
+      <div class="buyer-info">
+        <div class="label">Odběratel</div>
+        <div class="buyer-name">{{ customer.company_name }}</div>
+        {% if customer.street %}<div>{{ customer.street }}</div>{% endif %}
+        {% if customer.zip_code or customer.city %}
+          <div>{{ customer.zip_code }} {{ customer.city }}</div>
+        {% endif %}
+        {% if customer.country and customer.country != 'Česká republika' %}
+          <div>{{ customer.country }}</div>
+        {% endif %}
+        <div>{{ customer.country or 'Česká republika' }}</div>
+        {% if customer.ic %}<div>IČ: {{ customer.ic }}</div>{% endif %}
+        {% if customer.dic %}<div>DIČ: {{ customer.dic }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA -->
+  <div class="dates-row">
+    Datum vystavení: &nbsp;<strong>{{ invoice.date_issued.strftime('%d.%m.%Y') }}</strong>
+    &nbsp;&nbsp;&nbsp;&nbsp;
+    Datum splatnosti: <strong>{{ invoice.date_due.strftime('%d.%m.%Y') }}</strong>
+  </div>
+
+  <!-- PLATEBNÍ ÚDAJE -->
+  <div class="section-platebni">
+    <div class="section-label">PLATEBNÍ ÚDAJE</div>
+    <div class="payment-grid">
+      <div class="payment-left">
+        <div class="payment-label">Bankovní účet</div>
+        {% if supplier.bank_account %}
+          <div class="payment-value">{{ supplier.bank_account }}</div>
+        {% endif %}
+        {% if supplier.iban %}
+          <div style="font-size:8pt;">IBAN: {{ supplier.iban }}</div>
+        {% endif %}
+        {% if supplier.swift_bic %}
+          <div style="font-size:8pt;">SWIFT: {{ supplier.swift_bic }}</div>
+        {% endif %}
+      </div>
+      <div class="payment-center">
+        <div class="payment-label">Symbol</div>
+        <div>variabilní: &nbsp;<strong>{{ invoice.variable_symbol or invoice.invoice_number }}</strong></div>
+        <div>konstantní: &nbsp;<strong>{{ invoice.constant_symbol or '0308' }}</strong></div>
+        <div style="margin-top:2mm;">
+          <span class="payment-label">Způsob platby: </span>
+          <strong>{{ invoice.payment_method or 'Převodem' }}</strong>
+        </div>
+      </div>
+      <div class="payment-right">
+        <div class="amount-label">K úhradě</div>
+        <div class="amount-value">{{ format_czk(invoice.total_amount) }} Kč</div>
+        {% if qr_base64 %}
+        <div class="qr-code">
+          <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR Platba">
+          <div class="qr-label">QR Platba</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- FAKTURUJEME VÁM -->
+  <div class="section-fakturujeme">
+    <div class="section-label">FAKTURUJEME VÁM</div>
+    <div class="legal-note">
+      {% if supplier.ic %}Dodavatel je zapsán v živnostenském rejstříku.{% endif %}<br>
+      Fakturujeme Vám za dodané zboží či služby:
+    </div>
+
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Označení dodávky</th>
+          <th>Počet &nbsp;m. j.</th>
+          <th>Cena za m.j.</th>
+          <th>Celkem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.description }}</td>
+          <td>{{ format_czk(item.quantity) }}</td>
+          <td>{{ format_czk(item.unit_price) }}</td>
+          <td>{{ format_czk(item.total) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Upozornění -->
+  {% if supplier and supplier.late_payment_text %}
+  <div class="warning-text">
+    {{ supplier.late_payment_text }}
+  </div>
+  {% endif %}
+
+  <!-- REKAPITULACE -->
+  <div class="section-rekapitulace">
+    <div class="section-label">REKAPITULACE</div>
+    <div class="total-box">
+      <div class="total-label">Celkem k úhradě:</div>
+      <div class="total-value">{{ format_czk(invoice.total_amount) }} Kč</div>
+    </div>
+    <div style="clear:both;"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>Vytiskl(a): {{ supplier.company_name }}, {{ now.strftime('%d.%m.%Y') }}</div>
+    <div>Strana 1/1</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Profil dodavatele{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="bi bi-building"></i> Profil dodavatele</h2>
+    <p class="text-muted">Údaje, které se zobrazí na faktuře jako dodavatel.</p>
+
+    <form method="POST" action="{{ url_for('faktury.supplier_profile') }}">
+        <div class="row">
+            <!-- Firemní údaje -->
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header"><h5>Identifikační údaje</h5></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="company_name" class="form-label">Název / Jméno *</label>
+                            <input type="text" class="form-control" id="company_name" name="company_name"
+                                   value="{{ profile.company_name if profile else '' }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="street" class="form-label">Ulice a číslo</label>
+                            <input type="text" class="form-control" id="street" name="street"
+                                   value="{{ profile.street if profile else '' }}">
+                        </div>
+                        <div class="row">
+                            <div class="col-4 mb-3">
+                                <label for="zip_code" class="form-label">PSČ</label>
+                                <input type="text" class="form-control" id="zip_code" name="zip_code"
+                                       value="{{ profile.zip_code if profile else '' }}">
+                            </div>
+                            <div class="col-8 mb-3">
+                                <label for="city" class="form-label">Město</label>
+                                <input type="text" class="form-control" id="city" name="city"
+                                       value="{{ profile.city if profile else '' }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="country" class="form-label">Země</label>
+                            <input type="text" class="form-control" id="country" name="country"
+                                   value="{{ profile.country if profile else 'Česká republika' }}">
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label for="ic" class="form-label">IČ</label>
+                                <input type="text" class="form-control" id="ic" name="ic"
+                                       value="{{ profile.ic if profile else '' }}">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label for="dic" class="form-label">DIČ</label>
+                                <input type="text" class="form-control" id="dic" name="dic"
+                                       value="{{ profile.dic if profile else '' }}">
+                            </div>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="is_vat_payer" name="is_vat_payer"
+                                   {{ 'checked' if profile and profile.is_vat_payer else '' }}>
+                            <label class="form-check-label" for="is_vat_payer">Jsme plátci DPH</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kontakt -->
+                <div class="card mb-3">
+                    <div class="card-header"><h5>Kontaktní údaje</h5></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-mail</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   value="{{ profile.email if profile else '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Telefon</label>
+                            <input type="text" class="form-control" id="phone" name="phone"
+                                   value="{{ profile.phone if profile else '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platební údaje -->
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header"><h5>Platební údaje</h5></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="bank_account" class="form-label">Číslo účtu</label>
+                            <input type="text" class="form-control" id="bank_account" name="bank_account"
+                                   value="{{ profile.bank_account if profile else '' }}"
+                                   placeholder="2619529193/0800">
+                        </div>
+                        <div class="mb-3">
+                            <label for="iban" class="form-label">IBAN</label>
+                            <input type="text" class="form-control" id="iban" name="iban"
+                                   value="{{ profile.iban if profile else '' }}"
+                                   placeholder="CZ47 0800 0000 0026 1952 9193">
+                        </div>
+                        <div class="mb-3">
+                            <label for="swift_bic" class="form-label">SWIFT/BIC</label>
+                            <input type="text" class="form-control" id="swift_bic" name="swift_bic"
+                                   value="{{ profile.swift_bic if profile else '' }}"
+                                   placeholder="GIBACZPX">
+                        </div>
+                        <div class="mb-3">
+                            <label for="constant_symbol" class="form-label">Konstantní symbol</label>
+                            <input type="text" class="form-control" id="constant_symbol" name="constant_symbol"
+                                   value="{{ profile.constant_symbol if profile else '0308' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="payment_method" class="form-label">Způsob platby</label>
+                            <select class="form-select" id="payment_method" name="payment_method">
+                                <option value="Převodem" {{ 'selected' if not profile or profile.payment_method == 'Převodem' }}>Převodem</option>
+                                <option value="Hotově" {{ 'selected' if profile and profile.payment_method == 'Hotově' }}>Hotově</option>
+                                <option value="Kartou" {{ 'selected' if profile and profile.payment_method == 'Kartou' }}>Kartou</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header"><h5>Text na faktuře</h5></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="late_payment_text" class="form-label">Upozornění o úroku z prodlení</label>
+                            <textarea class="form-control" id="late_payment_text" name="late_payment_text" rows="3"
+                            >{{ profile.late_payment_text if profile else 'Dovolujeme si Vás upozornit, že v případě nedodržení data splatnosti uvedeného na faktuře Vám můžeme účtovat zákonný úrok z prodlení.' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 mb-4">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Uložit profil</button>
+            <a href="{{ url_for('faktury.invoice_list') }}" class="btn btn-secondary">Zpět na faktury</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

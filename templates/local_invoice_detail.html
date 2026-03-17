@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Faktura {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>
+            <i class="bi bi-file-earmark-text"></i> Faktura {{ invoice.invoice_number }}
+            <span class="badge bg-{{ invoice.status_color }}">{{ invoice.status_label }}</span>
+        </h2>
+        <div>
+            <a href="{{ url_for('faktury.invoice_pdf', id=invoice.id) }}" class="btn btn-success">
+                <i class="bi bi-file-pdf"></i> Stáhnout PDF
+            </a>
+            {% if invoice.status == 'draft' %}
+            <a href="{{ url_for('faktury.invoice_edit', id=invoice.id) }}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Editovat
+            </a>
+            <form method="POST" action="{{ url_for('faktury.invoice_status', id=invoice.id) }}" class="d-inline">
+                <input type="hidden" name="status" value="issued">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> Vystavit</button>
+            </form>
+            {% elif invoice.status == 'issued' %}
+            <form method="POST" action="{{ url_for('faktury.invoice_status', id=invoice.id) }}" class="d-inline">
+                <input type="hidden" name="status" value="paid">
+                <button type="submit" class="btn btn-success"><i class="bi bi-cash-coin"></i> Zaplaceno</button>
+            </form>
+            <form method="POST" action="{{ url_for('faktury.invoice_status', id=invoice.id) }}" class="d-inline">
+                <input type="hidden" name="status" value="cancelled">
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Opravdu stornovat?')">
+                    <i class="bi bi-x-circle"></i> Storno
+                </button>
+            </form>
+            {% elif invoice.status == 'cancelled' %}
+            <form method="POST" action="{{ url_for('faktury.invoice_status', id=invoice.id) }}" class="d-inline">
+                <input type="hidden" name="status" value="draft">
+                <button type="submit" class="btn btn-secondary"><i class="bi bi-arrow-counterclockwise"></i> Zpět na koncept</button>
+            </form>
+            {% endif %}
+            {% if invoice.status == 'draft' %}
+            <form method="POST" action="{{ url_for('faktury.invoice_delete', id=invoice.id) }}" class="d-inline"
+                  onsubmit="return confirm('Opravdu smazat fakturu?')">
+                <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Smazat</button>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('faktury.invoice_list') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Zpět
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Dodavatel + Odběratel -->
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header"><h5>Dodavatel</h5></div>
+                <div class="card-body">
+                    {% if supplier %}
+                    <strong>{{ supplier.company_name }}</strong><br>
+                    {% if supplier.street %}{{ supplier.street }}<br>{% endif %}
+                    {{ supplier.zip_code }} {{ supplier.city }}<br>
+                    {% if supplier.ic %}IČ: {{ supplier.ic }}<br>{% endif %}
+                    {% if not supplier.is_vat_payer %}Nejsme plátci DPH{% elif supplier.dic %}DIČ: {{ supplier.dic }}{% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header"><h5>Odběratel</h5></div>
+                <div class="card-body">
+                    {% if invoice.customer %}
+                    <strong>{{ invoice.customer.company_name }}</strong><br>
+                    {% if invoice.customer.street %}{{ invoice.customer.street }}<br>{% endif %}
+                    {{ invoice.customer.zip_code }} {{ invoice.customer.city }}<br>
+                    {% if invoice.customer.ic %}IČ: {{ invoice.customer.ic }}<br>{% endif %}
+                    {% if invoice.customer.dic %}DIČ: {{ invoice.customer.dic }}{% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header"><h5>Údaje faktury</h5></div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tr><td class="text-muted">Datum vystavení</td><td><strong>{{ invoice.date_issued.strftime('%d.%m.%Y') }}</strong></td></tr>
+                        <tr><td class="text-muted">Datum splatnosti</td><td><strong>{{ invoice.date_due.strftime('%d.%m.%Y') }}</strong></td></tr>
+                        <tr><td class="text-muted">Variabilní symbol</td><td>{{ invoice.variable_symbol or invoice.invoice_number }}</td></tr>
+                        <tr><td class="text-muted">Konstantní symbol</td><td>{{ invoice.constant_symbol or '0308' }}</td></tr>
+                        <tr><td class="text-muted">Způsob platby</td><td>{{ invoice.payment_method or 'Převodem' }}</td></tr>
+                        {% if invoice.source_month %}
+                        <tr><td class="text-muted">Z docházky</td><td>{{ invoice.source_month }}{% if invoice.source_zakazka %} — {{ invoice.source_zakazka.name }}{% endif %}</td></tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-3 border-primary">
+                <div class="card-header bg-primary text-white"><h5 class="mb-0">K úhradě</h5></div>
+                <div class="card-body text-center">
+                    <span style="font-size: 2rem; font-weight: bold;">
+                        {{ '{:,.2f}'.format(invoice.total_amount|float).replace(',', ' ').replace('.', ',') }} Kč
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Položky -->
+    <div class="card mb-4">
+        <div class="card-header"><h5>Položky</h5></div>
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Popis</th>
+                        <th class="text-end">Počet</th>
+                        <th>Jednotka</th>
+                        <th class="text-end">Cena/j.</th>
+                        <th class="text-end">Celkem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in invoice.items %}
+                    <tr>
+                        <td>{{ item.description }}</td>
+                        <td class="text-end">{{ '{:,.2f}'.format(item.quantity|float).replace(',', ' ').replace('.', ',') }}</td>
+                        <td>{{ item.unit }}</td>
+                        <td class="text-end">{{ '{:,.2f}'.format(item.unit_price|float).replace(',', ' ').replace('.', ',') }}</td>
+                        <td class="text-end"><strong>{{ '{:,.2f}'.format(item.total|float).replace(',', ' ').replace('.', ',') }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-primary">
+                        <td colspan="4" class="text-end"><strong>Celkem k úhradě:</strong></td>
+                        <td class="text-end"><strong>{{ '{:,.2f}'.format(invoice.total_amount|float).replace(',', ' ').replace('.', ',') }} Kč</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    {% if invoice.note %}
+    <div class="card mb-4">
+        <div class="card-header"><h5>Poznámka</h5></div>
+        <div class="card-body">{{ invoice.note }}</div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
