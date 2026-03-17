@@ -1,0 +1,31 @@
+services:
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: dochazka
+      MYSQL_USER: dochazka_user
+      MYSQL_PASSWORD: dochazka_pass
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      SQLALCHEMY_DATABASE_URI: mysql+pymysql://dochazka_user:dochazka_pass@db:3306/dochazka
+      SECRET_KEY: super-tajne-heslo
+      FLASK_CONFIG: dev
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:

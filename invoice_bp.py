@@ -385,7 +385,7 @@ def _get_prefill_data():
             LogEntry.start_time < end_date
         ).scalar() or 0
 
-        hours = round(total_minutes / 60.0, 2)
+        hours = round(float(total_minutes) / 60.0, 2)
         zakazka = Zakazka.query.get(zakazka_id)
         settings = InvoiceSettings.query.filter_by(zakazka_id=zakazka_id).first()
 

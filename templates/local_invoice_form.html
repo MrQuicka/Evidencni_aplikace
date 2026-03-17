@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
         addItem('{{ item.description|e }}', '{{ item.quantity }}', '{{ item.unit|e }}', '{{ item.unit_price }}');
         {% endfor %}
     {% elif prefill and prefill.get('items') %}
-        {% for item in prefill.items %}
+        {% for item in prefill.get('items') %}
         addItem('{{ item.description|e }}', '{{ item.quantity or "" }}', '{{ item.unit|default("hod")|e }}', '{{ item.unit_price or "" }}');
         {% endfor %}
     {% else %}

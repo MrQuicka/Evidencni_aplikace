@@ -1131,7 +1131,7 @@ def save_invoicing_settings():
 
             # Ošetři prázdné hodnoty
             contact_id = request.form.get(f'contact_{zakazka_id}')
-            settings.idoklad_contact_id = int(contact_id) if contact_id and contact_id.strip() else None
+            settings.idoklad_contact_id = int(contact_id) if contact_id and contact_id.strip() and contact_id.strip().lstrip('-').isdigit() else None
 
             settings.idoklad_item_name = request.form.get(f'item_{zakazka_id}') or None
 
