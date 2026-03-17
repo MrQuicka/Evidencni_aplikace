@@ -7,9 +7,14 @@
     <form method="post">
       <div class="mb-3">
         <label class="form-label">Projekt:</label>
-        <select name="project_id" class="form-select">
-          {% for project in projects %}
-            <option value="{{ project.id }}">{{ project.name }}</option>
+        <select name="project_id" class="form-select" required>
+          <option value="">-- Vyberte projekt --</option>
+          {% for zakazka in zakazky %}
+            <optgroup label="{{ zakazka.name }}">
+              {% for projekt in zakazka.projekty %}
+                <option value="{{ projekt.id }}">{{ projekt.name }}</option>
+              {% endfor %}
+            </optgroup>
           {% endfor %}
         </select>
       </div>

@@ -9,7 +9,7 @@
             <div class="card-body">
                 <form method="GET" action="{{ url_for('reports_view') }}" id="filterForm">
                     <div class="row g-3">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="period" class="form-label">Období</label>
                             <select class="form-select" name="period" id="period">
                                 <option value="daily" {% if period == 'daily' %}selected{% endif %}>Denně</option>
@@ -18,13 +18,28 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label for="project_id" class="form-label">Projekt</label>
-                            <select class="form-select" name="project_id" id="project_id">
-                                <option value="all" {% if project_id == 'all' %}selected{% endif %}>Všechny projekty</option>
-                                {% for project in projects %}
-                                <option value="{{ project.id }}" {% if project_id == project.id|string %}selected{% endif %}>
-                                    {{ project.name }}
+                            <label for="zakazka_id" class="form-label">Zakázka</label>
+                            <select class="form-select" name="zakazka_id" id="zakazka_id">
+                                <option value="all" {% if zakazka_id == 'all' %}selected{% endif %}>Všechny zakázky</option>
+                                {% for zakazka in zakazky %}
+                                <option value="{{ zakazka.id }}" {% if zakazka_id == zakazka.id|string %}selected{% endif %}>
+                                    {{ zakazka.name }}
                                 </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="projekt_id" class="form-label">Projekt</label>
+                            <select class="form-select" name="projekt_id" id="projekt_id">
+                                <option value="all" {% if projekt_id == 'all' %}selected{% endif %}>Všechny projekty</option>
+                                {% for zakazka in zakazky %}
+                                <optgroup label="{{ zakazka.name }}">
+                                    {% for projekt in zakazka.projekty %}
+                                    <option value="{{ projekt.id }}" {% if projekt_id == projekt.id|string %}selected{% endif %}>
+                                        {{ projekt.name }}
+                                    </option>
+                                    {% endfor %}
+                                </optgroup>
                                 {% endfor %}
                             </select>
                         </div>

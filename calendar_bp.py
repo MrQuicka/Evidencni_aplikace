@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, abort
 from flask_login import login_required, current_user
-from models import db, LogEntry, Project
+from models import db, LogEntry, Projekt, Zakazka
 from datetime import datetime
 
 bp = Blueprint('calendar_api', __name__, url_prefix='/api')
@@ -17,10 +17,25 @@ def get_logs():
     entries = LogEntry.query.filter_by(user_id=current_user.id).all()
     events = []
     for e in entries:
+        projekt = e.project
+        projekt_name = projekt.name if projekt else '—'
+        zakazka = projekt.zakazka if projekt else None
+        zakazka_name = zakazka.name if zakazka else '—'
+        projekt_color = projekt.color if projekt else '#28a745'
+
+        # Krátký title: jen poznámka, nebo název projektu jako fallback
+        if e.note:
+            title = e.note
+        else:
+            title = projekt_name
+
         events.append({
             'id': e.id,
-            'title': e.note or '—',
+            'title': title,
             'project_id': e.project_id,
+            'projekt_name': projekt_name,
+            'zakazka_name': zakazka_name,
+            'color': projekt_color,
             'start': to_local_str(e.start_time),
             'end':   to_local_str(e.end_time),
             'note':  e.note

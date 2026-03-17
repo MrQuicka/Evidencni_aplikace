@@ -1,0 +1,908 @@
+/* Vlastní styly pro aplikaci Docházka */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.025);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Dark mode toggle button styling */
+#darkModeToggle {
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 0.5rem 1rem;
+}
+
+#darkModeToggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#darkModeIcon {
+    font-size: 1.2rem;
+}
+
+/* Dark mode specifické úpravy */
+[data-bs-theme="dark"] .table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.075);
+}
+
+[data-bs-theme="dark"] .card {
+    background-color: #212529;
+    border-color: #495057;
+}
+
+[data-bs-theme="dark"] .table {
+    --bs-table-bg: #212529;
+    --bs-table-striped-bg: #2c3034;
+}
+
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+    background-color: #212529;
+    border-color: #495057;
+    color: #fff;
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    background-color: #212529;
+    border-color: #86b7fe;
+    color: #fff;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary,
+[data-bs-theme="dark"] .btn-outline-secondary,
+[data-bs-theme="dark"] .btn-outline-danger {
+    border-color: currentColor;
+}
+
+/* Smooth transitions for theme changes */
+* {
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Responsive table styling */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+
+/* =====================================================
+   LCARS Theme - Star Trek: The Next Generation
+   Flat, 2D, no gradients, no shadows.
+   "Infographic from 1987 on a touch-screen tablet."
+   ===================================================== */
+
+/* --- LCARS Color Palette (muted, authentic) --- */
+[data-bs-theme="lcars"] {
+    --lcars-bg: #000000;
+    --lcars-lavender: #CC99CC;
+    --lcars-tan: #D4A76A;
+    --lcars-peach: #FFCC99;
+    --lcars-salmon: #FF9966;
+    --lcars-bluegray: #9999CC;
+    --lcars-rust: #CC6633;
+    --lcars-dusty: #C695A0;
+    --lcars-gold: #E6B44C;
+    --lcars-text: #CC9933;
+    --lcars-text-bright: #FFCC99;
+
+    --bs-body-bg: #000000;
+    --bs-body-color: #CC9933;
+    --bs-emphasis-color: #FFCC99;
+    --bs-link-color: #CC99CC;
+    --bs-link-hover-color: #FFCC99;
+    --bs-border-color: #332200;
+    color-scheme: dark;
+}
+
+/* --- LCARS Frame: hide by default --- */
+.lcars-frame {
+    display: none !important;
+}
+
+/* --- In LCARS mode: hide standard nav, show frame --- */
+[data-bs-theme="lcars"] .standard-nav {
+    display: none !important;
+}
+
+[data-bs-theme="lcars"] .lcars-frame {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    pointer-events: none;
+}
+
+/* Enable clicks on interactive frame elements */
+[data-bs-theme="lcars"] .lcars-frame a,
+[data-bs-theme="lcars"] .lcars-frame button {
+    pointer-events: auto;
+}
+
+/* --- Body --- */
+[data-bs-theme="lcars"] body {
+    background-color: #000000;
+    color: #CC9933;
+    font-family: 'Helvetica Neue', 'Arial', sans-serif;
+}
+
+/* --- Content area: make room for the frame --- */
+[data-bs-theme="lcars"] .main-content {
+    margin-left: 170px;
+    margin-top: 68px;
+    margin-bottom: 50px;
+    margin-right: 24px;
+    max-width: none;
+    padding: 12px 20px;
+}
+
+/* ======================
+   TOP ROW: elbow + bar
+   ====================== */
+[data-bs-theme="lcars"] .lcars-row-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    display: flex;
+    align-items: stretch;
+}
+
+/* Top-left elbow: solid colored block with inner curve cutout */
+[data-bs-theme="lcars"] .lcars-elbow-top {
+    width: 150px;
+    min-width: 150px;
+    height: 50px;
+    background-color: #CC99CC;
+    border-radius: 24px 0 0 0;
+    position: relative;
+}
+/* Inner curve cutout */
+[data-bs-theme="lcars"] .lcars-elbow-top::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 36px;
+    height: 26px;
+    background-color: #000000;
+    border-top-left-radius: 18px;
+}
+
+/* Top horizontal bar */
+[data-bs-theme="lcars"] .lcars-bar-top {
+    flex: 1;
+    height: 24px;
+    background-color: #CC99CC;
+    margin-top: 0;
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    padding-left: 16px;
+}
+
+[data-bs-theme="lcars"] .lcars-title {
+    color: #000000;
+    font-weight: 800;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-right: auto;
+}
+
+/* Header pills (decorative labels) */
+[data-bs-theme="lcars"] .lcars-pill-group {
+    display: flex;
+    gap: 6px;
+    align-self: flex-start;
+    margin-top: 0;
+    height: 24px;
+    align-items: stretch;
+}
+
+[data-bs-theme="lcars"] .lcars-pill {
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #000000;
+}
+
+/* Top-right endcap */
+[data-bs-theme="lcars"] .lcars-endcap-top {
+    width: 60px;
+    min-width: 60px;
+    height: 24px;
+    background-color: #D4A76A;
+    border-radius: 0 12px 12px 0;
+    align-self: flex-start;
+    margin-left: 6px;
+}
+
+/* ======================
+   SIDEBAR (left column)
+   ====================== */
+[data-bs-theme="lcars"] .lcars-sidebar {
+    position: absolute;
+    top: 56px;
+    left: 0;
+    bottom: 42px;
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 4px;
+}
+
+/* Sidebar navigation buttons: pill-left, flat-right */
+[data-bs-theme="lcars"] .lcars-nav-btn {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    border-radius: 16px 0 0 16px;
+    padding: 0 10px 0 16px;
+    text-decoration: none;
+    color: #000000;
+    font-weight: 700;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    line-height: 1;
+}
+
+[data-bs-theme="lcars"] .lcars-nav-btn:hover {
+    filter: brightness(1.2);
+    text-decoration: none;
+    color: #000000;
+}
+
+/* Sidebar filler block: fills remaining vertical space */
+[data-bs-theme="lcars"] .lcars-filler {
+    flex: 1;
+    min-height: 20px;
+    border-radius: 16px 0 0 16px;
+}
+
+/* ======================
+   BOTTOM ROW: elbow + bar
+   ====================== */
+[data-bs-theme="lcars"] .lcars-row-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 32px;
+    display: flex;
+    align-items: stretch;
+}
+
+/* Bottom-left elbow */
+[data-bs-theme="lcars"] .lcars-elbow-bottom {
+    width: 150px;
+    min-width: 150px;
+    height: 32px;
+    background-color: #9999CC;
+    border-radius: 0 0 0 24px;
+    position: relative;
+}
+[data-bs-theme="lcars"] .lcars-elbow-bottom::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 36px;
+    height: 18px;
+    background-color: #000000;
+    border-bottom-left-radius: 18px;
+}
+
+/* Bottom horizontal bar */
+[data-bs-theme="lcars"] .lcars-bar-bottom {
+    flex: 1;
+    height: 16px;
+    background-color: #9999CC;
+    align-self: flex-end;
+}
+
+/* Bottom-right endcap */
+[data-bs-theme="lcars"] .lcars-endcap-bottom {
+    width: 60px;
+    min-width: 60px;
+    height: 16px;
+    background-color: #FF9966;
+    border-radius: 0 8px 8px 0;
+    align-self: flex-end;
+    margin-left: 6px;
+}
+
+/* ======================
+   LCARS COLOR CLASSES
+   ====================== */
+.lcars-c-lavender  { background-color: #CC99CC; }
+.lcars-c-tan       { background-color: #D4A76A; }
+.lcars-c-peach     { background-color: #FFCC99; }
+.lcars-c-salmon    { background-color: #FF9966; }
+.lcars-c-bluegray  { background-color: #9999CC; }
+.lcars-c-rust      { background-color: #CC6633; }
+.lcars-c-dusty     { background-color: #C695A0; }
+.lcars-c-gold      { background-color: #E6B44C; }
+
+/* ======================
+   CONTENT STYLING IN LCARS MODE
+   (flat, no gradients, no shadows)
+   ====================== */
+
+/* Headings */
+[data-bs-theme="lcars"] h1,
+[data-bs-theme="lcars"] h2,
+[data-bs-theme="lcars"] h3,
+[data-bs-theme="lcars"] h4,
+[data-bs-theme="lcars"] h5,
+[data-bs-theme="lcars"] h6 {
+    color: #FFCC99;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+}
+
+/* Cards */
+[data-bs-theme="lcars"] .card {
+    background-color: #000000;
+    border: 2px solid #332200;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: none;
+}
+
+[data-bs-theme="lcars"] .card-header {
+    background-color: #D4A76A;
+    color: #000000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-bottom: 4px solid #000000;
+    border-radius: 14px 14px 0 0;
+    padding: 0.4rem 1rem;
+}
+
+[data-bs-theme="lcars"] .card-header h5 {
+    color: #000000;
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+/* Dashboard stat cards: flat solid colors */
+[data-bs-theme="lcars"] .card.bg-primary {
+    background-color: #9999CC !important;
+    border-color: #9999CC;
+}
+[data-bs-theme="lcars"] .card.bg-success {
+    background-color: #CC99CC !important;
+    border-color: #CC99CC;
+}
+[data-bs-theme="lcars"] .card.bg-info {
+    background-color: #D4A76A !important;
+    border-color: #D4A76A;
+}
+[data-bs-theme="lcars"] .card.bg-warning {
+    background-color: #FF9966 !important;
+    border-color: #FF9966;
+}
+
+[data-bs-theme="lcars"] .card.bg-primary,
+[data-bs-theme="lcars"] .card.bg-success,
+[data-bs-theme="lcars"] .card.bg-info,
+[data-bs-theme="lcars"] .card.bg-warning {
+    border-radius: 16px;
+    border-width: 0;
+}
+
+[data-bs-theme="lcars"] .card.bg-primary h5,
+[data-bs-theme="lcars"] .card.bg-success h5,
+[data-bs-theme="lcars"] .card.bg-info h5,
+[data-bs-theme="lcars"] .card.bg-warning h5,
+[data-bs-theme="lcars"] .card.bg-primary h2,
+[data-bs-theme="lcars"] .card.bg-success h2,
+[data-bs-theme="lcars"] .card.bg-info h2,
+[data-bs-theme="lcars"] .card.bg-warning h2 {
+    color: #000000;
+}
+
+/* Tables */
+[data-bs-theme="lcars"] .table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(204, 153, 51, 0.06);
+    --bs-table-hover-bg: rgba(204, 153, 51, 0.12);
+    color: #CC9933;
+    border-color: #1a1400;
+}
+
+[data-bs-theme="lcars"] .table thead th {
+    background-color: #CC99CC;
+    color: #000000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.78rem;
+    border: none;
+    padding: 0.5rem 0.8rem;
+}
+
+[data-bs-theme="lcars"] .table thead th:first-child {
+    border-radius: 10px 0 0 0;
+}
+[data-bs-theme="lcars"] .table thead th:last-child {
+    border-radius: 0 10px 0 0;
+}
+
+[data-bs-theme="lcars"] .table td {
+    border-color: #1a1400;
+    vertical-align: middle;
+}
+
+[data-bs-theme="lcars"] .table-hover tbody tr:hover {
+    background-color: rgba(204, 153, 51, 0.12);
+}
+
+/* Forms */
+[data-bs-theme="lcars"] .form-control,
+[data-bs-theme="lcars"] .form-select {
+    background-color: #000000;
+    border: 2px solid #9999CC;
+    border-radius: 14px;
+    color: #CC9933;
+    padding: 0.45rem 1rem;
+    box-shadow: none;
+}
+
+[data-bs-theme="lcars"] .form-control:focus,
+[data-bs-theme="lcars"] .form-select:focus {
+    background-color: #000000;
+    border-color: #CC99CC;
+    color: #FFCC99;
+    box-shadow: none;
+    outline: 2px solid #CC99CC;
+    outline-offset: 1px;
+}
+
+[data-bs-theme="lcars"] .form-control::placeholder {
+    color: #554422;
+}
+
+[data-bs-theme="lcars"] .form-label {
+    color: #CC99CC;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+[data-bs-theme="lcars"] .form-check-input {
+    background-color: #000000;
+    border: 2px solid #9999CC;
+}
+[data-bs-theme="lcars"] .form-check-input:checked {
+    background-color: #CC99CC;
+    border-color: #CC99CC;
+}
+
+/* Buttons: flat pill shapes, no gradients */
+[data-bs-theme="lcars"] .btn-primary {
+    background-color: #D4A76A;
+    border: none;
+    color: #000000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 18px;
+    padding: 0.45rem 1.4rem;
+    box-shadow: none;
+}
+[data-bs-theme="lcars"] .btn-primary:hover {
+    background-color: #E6B44C;
+    color: #000000;
+}
+
+[data-bs-theme="lcars"] .btn-secondary {
+    background-color: #CC99CC;
+    border: none;
+    color: #000000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 18px;
+    padding: 0.45rem 1.4rem;
+    box-shadow: none;
+}
+[data-bs-theme="lcars"] .btn-secondary:hover {
+    background-color: #DDAADD;
+    color: #000000;
+}
+
+[data-bs-theme="lcars"] .btn-success {
+    background-color: #9999CC;
+    border: none;
+    color: #000000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 18px;
+    padding: 0.45rem 1.4rem;
+    box-shadow: none;
+}
+[data-bs-theme="lcars"] .btn-success:hover {
+    background-color: #AAAADD;
+    color: #000000;
+}
+
+[data-bs-theme="lcars"] .btn-info {
+    background-color: #FFCC99;
+    border: none;
+    color: #000000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 18px;
+    padding: 0.45rem 1.4rem;
+    box-shadow: none;
+}
+[data-bs-theme="lcars"] .btn-info:hover {
+    background-color: #FFDDAA;
+    color: #000000;
+}
+
+[data-bs-theme="lcars"] .btn-danger {
+    background-color: #CC6633;
+    border: none;
+    color: #000000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 18px;
+    padding: 0.45rem 1.4rem;
+    box-shadow: none;
+}
+[data-bs-theme="lcars"] .btn-danger:hover {
+    background-color: #DD7744;
+    color: #000000;
+}
+
+[data-bs-theme="lcars"] .btn-outline-primary {
+    border: 2px solid #D4A76A;
+    color: #D4A76A;
+    border-radius: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: none;
+    background: transparent;
+}
+[data-bs-theme="lcars"] .btn-outline-primary:hover {
+    background-color: #D4A76A;
+    color: #000000;
+}
+
+[data-bs-theme="lcars"] .btn-outline-secondary {
+    border: 2px solid #CC99CC;
+    color: #CC99CC;
+    border-radius: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: none;
+    background: transparent;
+}
+[data-bs-theme="lcars"] .btn-outline-secondary:hover {
+    background-color: #CC99CC;
+    color: #000000;
+}
+
+[data-bs-theme="lcars"] .btn-outline-danger {
+    border: 2px solid #CC6633;
+    color: #CC6633;
+    border-radius: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: none;
+    background: transparent;
+}
+[data-bs-theme="lcars"] .btn-outline-danger:hover {
+    background-color: #CC6633;
+    color: #000000;
+}
+
+/* Alerts */
+[data-bs-theme="lcars"] .alert {
+    background-color: #000000;
+    border: 2px solid #D4A76A;
+    border-radius: 16px;
+    color: #CC9933;
+    box-shadow: none;
+}
+[data-bs-theme="lcars"] .alert-warning {
+    border-color: #E6B44C;
+    color: #E6B44C;
+}
+
+/* Badges */
+[data-bs-theme="lcars"] .badge.bg-primary {
+    background-color: #9999CC !important;
+    color: #000000;
+    border-radius: 10px;
+}
+[data-bs-theme="lcars"] .badge.bg-success {
+    background-color: #CC99CC !important;
+    color: #000000;
+    border-radius: 10px;
+}
+[data-bs-theme="lcars"] .badge.bg-warning {
+    background-color: #D4A76A !important;
+    color: #000000;
+    border-radius: 10px;
+}
+
+/* List groups */
+[data-bs-theme="lcars"] .list-group-item {
+    background-color: transparent;
+    border-color: #1a1400;
+    color: #CC9933;
+}
+
+/* Text utilities */
+[data-bs-theme="lcars"] .text-muted {
+    color: #665533 !important;
+}
+[data-bs-theme="lcars"] .text-primary {
+    color: #CC99CC !important;
+}
+
+/* Pagination */
+[data-bs-theme="lcars"] .page-link {
+    background-color: #000000;
+    border: 2px solid #9999CC;
+    color: #CC9933;
+    border-radius: 10px;
+    margin: 0 2px;
+    box-shadow: none;
+}
+[data-bs-theme="lcars"] .page-item.active .page-link {
+    background-color: #D4A76A;
+    border-color: #D4A76A;
+    color: #000000;
+}
+
+/* Modal */
+[data-bs-theme="lcars"] .modal-content {
+    background-color: #000000;
+    border: 3px solid #CC99CC;
+    border-radius: 20px;
+    box-shadow: none;
+}
+[data-bs-theme="lcars"] .modal-header {
+    background-color: #CC99CC;
+    color: #000000;
+    border-radius: 17px 17px 0 0;
+    border-bottom: 4px solid #000000;
+}
+[data-bs-theme="lcars"] .modal-header .modal-title {
+    color: #000000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+[data-bs-theme="lcars"] .modal-header .btn-close {
+    filter: brightness(0);
+}
+
+/* Scrollbar */
+[data-bs-theme="lcars"] ::-webkit-scrollbar {
+    width: 6px;
+}
+[data-bs-theme="lcars"] ::-webkit-scrollbar-track {
+    background: #000000;
+}
+[data-bs-theme="lcars"] ::-webkit-scrollbar-thumb {
+    background: #D4A76A;
+    border-radius: 3px;
+}
+
+/* Selection */
+[data-bs-theme="lcars"] ::selection {
+    background-color: #CC99CC;
+    color: #000000;
+}
+
+/* ======================
+   LCARS CALENDAR: fit in viewport (no scrolling)
+   ====================== */
+
+/* Pin the calendar page content into the exact frame opening */
+[data-bs-theme="lcars"] .main-content:has(#calendar) {
+    position: fixed;
+    top: 58px;
+    left: 158px;
+    right: 12px;
+    bottom: 38px;
+    margin: 0;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+}
+
+/* Compact heading */
+[data-bs-theme="lcars"] .main-content:has(#calendar) > h1 {
+    font-size: 0.9rem;
+    margin: 0 0 4px 0;
+    flex-shrink: 0;
+}
+
+/* Compact templates card */
+[data-bs-theme="lcars"] .main-content:has(#calendar) > .card.mb-3 {
+    margin-bottom: 4px !important;
+    flex-shrink: 0;
+}
+[data-bs-theme="lcars"] .main-content:has(#calendar) > .card.mb-3 .card-header {
+    padding: 2px 8px;
+}
+[data-bs-theme="lcars"] .main-content:has(#calendar) > .card.mb-3 .card-header h6 {
+    font-size: 0.65rem;
+    margin: 0;
+}
+[data-bs-theme="lcars"] .main-content:has(#calendar) > .card.mb-3 .card-body {
+    padding: 4px 8px;
+}
+[data-bs-theme="lcars"] .main-content:has(#calendar) > .card.mb-3 .btn-sm {
+    padding: 1px 6px;
+    font-size: 0.62rem;
+}
+
+/* Calendar div fills all remaining space */
+[data-bs-theme="lcars"] #calendar {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Force FullCalendar to fill its container exactly */
+[data-bs-theme="lcars"] .fc {
+    height: 100% !important;
+    font-size: 0.75rem;
+}
+[data-bs-theme="lcars"] .fc .fc-view-harness {
+    flex: 1;
+}
+[data-bs-theme="lcars"] .fc .fc-toolbar {
+    margin-bottom: 4px !important;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+[data-bs-theme="lcars"] .fc .fc-toolbar-title {
+    font-size: 0.9rem !important;
+}
+[data-bs-theme="lcars"] .fc .fc-col-header-cell {
+    padding: 1px 0;
+    font-size: 0.68rem;
+}
+[data-bs-theme="lcars"] .fc .fc-daygrid-body,
+[data-bs-theme="lcars"] .fc .fc-scrollgrid-sync-table {
+    height: 100% !important;
+}
+[data-bs-theme="lcars"] .fc .fc-daygrid-day {
+    min-height: 0 !important;
+}
+[data-bs-theme="lcars"] .fc .fc-daygrid-day-frame {
+    min-height: 0 !important;
+}
+[data-bs-theme="lcars"] .fc .fc-daygrid-day-number {
+    padding: 1px 3px;
+    font-size: 0.68rem;
+}
+[data-bs-theme="lcars"] .fc .fc-daygrid-day-events {
+    margin-top: 0;
+}
+[data-bs-theme="lcars"] .fc .fc-daygrid-event-harness {
+    margin-top: 0;
+}
+[data-bs-theme="lcars"] .fc .fc-event {
+    font-size: 0.6rem;
+    padding: 0 2px;
+    border-radius: 4px;
+    line-height: 1.2;
+}
+[data-bs-theme="lcars"] .fc .fc-button {
+    padding: 1px 6px;
+    font-size: 0.68rem;
+    border-radius: 8px;
+}
+[data-bs-theme="lcars"] .fc .fc-scroller {
+    overflow: hidden !important;
+}
+
+/* LCARS colors on FullCalendar */
+[data-bs-theme="lcars"] .fc {
+    --fc-border-color: #1a1400;
+    --fc-today-bg-color: rgba(204, 153, 51, 0.1);
+    --fc-neutral-bg-color: #000000;
+    --fc-page-bg-color: #000000;
+    --fc-event-bg-color: #D4A76A;
+    --fc-event-border-color: #D4A76A;
+    --fc-event-text-color: #000000;
+    --fc-button-bg-color: #9999CC;
+    --fc-button-border-color: #9999CC;
+    --fc-button-text-color: #000000;
+    --fc-button-hover-bg-color: #AAAADD;
+    --fc-button-hover-border-color: #AAAADD;
+    --fc-button-active-bg-color: #CC99CC;
+    --fc-button-active-border-color: #CC99CC;
+    color: #CC9933;
+}
+[data-bs-theme="lcars"] .fc .fc-col-header-cell {
+    background-color: #CC99CC;
+    color: #000000;
+}
+[data-bs-theme="lcars"] .fc .fc-col-header-cell a {
+    color: #000000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+[data-bs-theme="lcars"] .fc .fc-daygrid-day-number {
+    color: #CC9933;
+}
+[data-bs-theme="lcars"] .fc .fc-day-today .fc-daygrid-day-number {
+    color: #FFCC99;
+    font-weight: 700;
+}
+
+/* ======================
+   LCARS RESPONSIVE
+   ====================== */
+@media (max-width: 768px) {
+    [data-bs-theme="lcars"] .lcars-frame {
+        display: none !important;
+    }
+    [data-bs-theme="lcars"] .standard-nav {
+        display: flex !important;
+        background-color: #CC99CC !important;
+    }
+    [data-bs-theme="lcars"] .standard-nav .navbar-brand {
+        color: #000000 !important;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+    [data-bs-theme="lcars"] .standard-nav .nav-link {
+        color: #000000 !important;
+        font-weight: 600;
+    }
+    [data-bs-theme="lcars"] .main-content {
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+}

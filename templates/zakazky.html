@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Zakázky</h1>
+        <a href="{{ url_for('create_zakazka') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Vytvořit zakázku
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="alert alert-info alert-dismissible fade show">
+                {% for message in messages %}
+                    {{ message }}
+                {% endfor %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% if zakazky %}
+        <div class="row">
+            {% for zakazka in zakazky %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100" style="border-left: 5px solid {{ zakazka.color }};">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="card-title">
+                                {{ zakazka.name }}
+                                {% if not zakazka.is_active %}
+                                    <span class="badge bg-secondary">Archivováno</span>
+                                {% endif %}
+                            </h5>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown">
+                                    Akce
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editZakazkaModal{{ zakazka.id }}">
+                                            <i class="bi bi-pencil"></i> Upravit
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('manage_projekty', zakazka_id=zakazka.id) }}">
+                                            <i class="bi bi-folder"></i> Spravovat projekty
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <form method="post" action="{{ url_for('toggle_zakazka', zakazka_id=zakazka.id) }}" class="d-inline">
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="bi bi-archive"></i>
+                                                {% if zakazka.is_active %}Archivovat{% else %}Aktivovat{% endif %}
+                                            </button>
+                                        </form>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="post" action="{{ url_for('delete_zakazka', zakazka_id=zakazka.id) }}"
+                                              onsubmit="return confirm('Opravdu smazat/archivovat zakázku {{ zakazka.name }}?');" class="d-inline">
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="bi bi-trash"></i> Smazat
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <p class="card-text text-muted mb-2">
+                            <i class="bi bi-folder2-open"></i>
+                            {{ zakazka.projekty|length }} projekt(ů)
+                        </p>
+
+                        <div class="mt-3">
+                            <h6 class="text-muted mb-2">Projekty:</h6>
+                            <ul class="list-group list-group-flush">
+                                {% for projekt in zakazka.projekty %}
+                                <li class="list-group-item px-0 py-1">
+                                    <span class="badge" style="background-color: {{ projekt.color }};">&nbsp;&nbsp;</span>
+                                    {{ projekt.name }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted small">
+                        Vytvořeno: {{ zakazka.created_at.strftime('%d.%m.%Y') if zakazka.created_at else 'N/A' }}
+                    </div>
+                </div>
+            </div>
+            <!-- Modal pro editaci zakázky -->
+            <div class="modal fade" id="editZakazkaModal{{ zakazka.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post" action="{{ url_for('edit_zakazka', zakazka_id=zakazka.id) }}">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Upravit zakázku</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="editZakazkaName{{ zakazka.id }}" class="form-label">Název *</label>
+                                    <input type="text" class="form-control" id="editZakazkaName{{ zakazka.id }}"
+                                           name="name" value="{{ zakazka.name }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editZakazkaColor{{ zakazka.id }}" class="form-label">Barva</label>
+                                    <input type="color" class="form-control form-control-color"
+                                           id="editZakazkaColor{{ zakazka.id }}" name="color" value="{{ zakazka.color }}">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zrušit</button>
+                                <button type="submit" class="btn btn-primary">Uložit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Zatím nemáte žádné zakázky.
+            <a href="{{ url_for('create_zakazka') }}">Vytvořte první zakázku</a>.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

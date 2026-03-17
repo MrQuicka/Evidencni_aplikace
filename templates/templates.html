@@ -16,9 +16,13 @@
                         </div>
                         <div class="col-md-3">
                             <select name="project_id" class="form-select" required>
-                                <option value="">Projekt...</option>
-                                {% for project in projects %}
-                                <option value="{{ project.id }}">{{ project.name }}</option>
+                                <option value="">-- Vyberte projekt --</option>
+                                {% for zakazka in zakazky %}
+                                <optgroup label="{{ zakazka.name }}">
+                                    {% for projekt in zakazka.projekty %}
+                                    <option value="{{ projekt.id }}">{{ projekt.name }}</option>
+                                    {% endfor %}
+                                </optgroup>
                                 {% endfor %}
                             </select>
                         </div>
@@ -44,7 +48,8 @@
                     <div class="card-body">
                         <h5 class="card-title">{{ template.name }}</h5>
                         <p class="card-text">
-                            <strong>Projekt:</strong> {{ template.project.name }}<br>
+                            <strong>Zakázka:</strong> {{ template.project.zakazka.name if template.project and template.project.zakazka else '—' }}<br>
+                            <strong>Projekt:</strong> {{ template.project.name if template.project else '—' }}<br>
                             <strong>Délka:</strong> {{ template.duration_minutes }} min<br>
                             {% if template.note %}
                             <strong>Poznámka:</strong> {{ template.note }}

@@ -25,8 +25,8 @@
             <thead>
                 <tr>
                     <th>Měsíc</th>
-                    <th>Projekt</th>
-                    <th>Hodiny</th>
+                    <th>Zakázka</th>
+                    <th>Hodiny (všechny projekty)</th>
                     <th>Man-days</th>
                     <th>Stav</th>
                     <th>Akce</th>
@@ -36,7 +36,7 @@
                 {% for summary in summaries %}
                 <tr>
                     <td>{{ summary.month }}</td>
-                    <td>{{ summary.project_name }}</td>
+                    <td><strong>{{ summary.zakazka_name }}</strong></td>
                     <td>{{ summary.hours }}</td>
                     <td>{{ "%.2f"|format(summary.hours / 8) }}</td>
                     <td>
@@ -48,8 +48,8 @@
                     </td>
                     <td>
                         {% if not summary.is_invoiced %}
-                        <button class="btn btn-sm btn-primary" 
-                                onclick="createInvoice(&quot;{{ summary.month }}&quot;, {{ summary.project_id }})">
+                        <button class="btn btn-sm btn-primary"
+                                onclick="createInvoice(&quot;{{ summary.month }}&quot;, {{ summary.zakazka_id }}, &quot;{{ summary.zakazka_name }}&quot;)">
                             <i class="bi bi-file-earmark-text"></i> Vytvořit fakturu
                         </button>
                         {% else %}
@@ -74,23 +74,28 @@
             <form method="POST" action="/invoicing/create">
                 <div class="modal-body">
                     <input type="hidden" id="invoice_month" name="month">
-                    <input type="hidden" id="invoice_project_id" name="project_id">
-                    
+                    <input type="hidden" id="invoice_zakazka_id" name="zakazka_id">
+
                     <div class="mb-3">
                         <label>Měsíc:</label>
                         <span id="invoice_month_display"></span>
                     </div>
-                    
+
                     <div class="mb-3">
-                        <label>Projekt:</label>
-                        <span id="invoice_project_display"></span>
+                        <label>Zakázka:</label>
+                        <span id="invoice_zakazka_display"></span>
                     </div>
-                    
+
                     <div class="mb-3">
-                        <label>Hodiny:</label>
+                        <label>Celkové hodiny (všechny projekty):</label>
                         <span id="invoice_hours_display"></span>
                     </div>
-                    
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Faktura bude obsahovat hodiny ze <strong>všech projektů</strong> pod touto zakázkou.
+                    </div>
+
                     <div class="mb-3">
                         <label for="invoice_description">Popis faktury:</label>
                         <textarea class="form-control" id="invoice_description" name="description" rows="3"></textarea>
@@ -106,20 +111,19 @@
 </div>
 
 <script>
-function createInvoice(month, projectId) {
+function createInvoice(month, zakazkaId, zakazkaName) {
     // Najdi data v tabulce
     const row = event.target.closest('tr');
-    const projectName = row.cells[1].innerText;
     const hours = row.cells[2].innerText;
-    
+
     // Naplň modal
     document.getElementById('invoice_month').value = month;
-    document.getElementById('invoice_project_id').value = projectId;
+    document.getElementById('invoice_zakazka_id').value = zakazkaId;
     document.getElementById('invoice_month_display').innerText = month;
-    document.getElementById('invoice_project_display').innerText = projectName;
-    document.getElementById('invoice_hours_display').innerText = hours;
-    document.getElementById('invoice_description').value = `Fakturace za ${month} - ${projectName}`;
-    
+    document.getElementById('invoice_zakazka_display').innerText = zakazkaName;
+    document.getElementById('invoice_hours_display').innerText = hours + ' h';
+    document.getElementById('invoice_description').value = `Fakturace za ${month} - ${zakazkaName}`;
+
     // Zobraz modal
     new bootstrap.Modal(document.getElementById('invoiceModal')).show();
 }

@@ -33,8 +33,8 @@
             <div class="col-md-3">
                 <div class="card bg-warning text-white">
                     <div class="card-body">
-                        <h5>Projekty</h5>
-                        <h2>{{ active_projects|default(0) }}</h2>
+                        <h5>Aktivní zakázky</h5>
+                        <h2>{{ active_zakazky|default(0) }}</h2>
                     </div>
                 </div>
             </div>
@@ -44,10 +44,57 @@
             <div class="col">
                 <h3>Rychlé akce</h3>
                 <a href="/calendar" class="btn btn-primary">Nový záznam</a>
-                <a href="/projects" class="btn btn-secondary">Správa projektů</a>
+                <a href="/zakazky" class="btn btn-secondary">Správa zakázek</a>
                 <a href="/export" class="btn btn-success">Export dat</a>
                 <a href="/reports" class="btn btn-info">Zobrazit reporty</a>
             </div>
         </div>
+
+        {% if top_zakazky %}
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Top 3 zakázky tento měsíc</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            {% for zakazka_name, zakazka_color, hours in top_zakazky %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center" style="border-left: 4px solid {{ zakazka_color }};">
+                                {{ zakazka_name }}
+                                <span class="badge bg-primary rounded-pill">{{ "%.2f"|format(hours) }} h</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            {% if recent_logs %}
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Poslední záznamy</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            {% for log in recent_logs %}
+                            <li class="list-group-item" style="border-left: 4px solid {{ log.project.color if log.project else '#28a745' }};">
+                                <div class="d-flex justify-content-between">
+                                    <span>{{ log.projekt.zakazka.name }} / {{ log.projekt.name }}</span>
+                                    <span class="text-muted small">{{ log.start_time.strftime('%d.%m %H:%M') }}</span>
+                                </div>
+                                {% if log.note %}
+                                <small class="text-muted">{{ log.note[:50] }}{% if log.note|length > 50 %}...{% endif %}</small>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 {% endblock %}

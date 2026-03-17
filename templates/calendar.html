@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Kalendář aktivit{% endblock %}
 
+{% block extra_head %}
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
   <h1>Kalendář aktivit</h1>
   
@@ -26,8 +31,10 @@
   </div>
   
   <div id="calendar"></div>
+{% endblock %}
 
-  <!-- Modal pro vytváření a úpravy -->
+{% block modals %}
+  <!-- Modal pro vytváření a úpravy (outside main-content) -->
   <div class="modal fade" id="logModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <form id="logForm" class="modal-content">
@@ -38,10 +45,24 @@
         <div class="modal-body">
           <input type="hidden" id="log-id" name="id">
           <div class="mb-3">
+            <label for="log-zakazka" class="form-label">Zakázka</label>
+            <select class="form-select" id="log-zakazka" onchange="filterProjects()">
+              <option value="">-- Vyberte zakázku --</option>
+              {% for zakazka in zakazky %}
+                <option value="{{ zakazka.id }}">{{ zakazka.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
             <label for="log-project" class="form-label">Projekt</label>
             <select class="form-select" id="log-project" name="project_id" required>
-              {% for p in current_user.projects %}
-                <option value="{{ p.id }}">{{ p.name }}</option>
+              <option value="">-- Nejdříve vyberte zakázku --</option>
+              {% for zakazka in zakazky %}
+                {% for projekt in zakazka.projekty %}
+                  <option value="{{ projekt.id }}" data-zakazka="{{ zakazka.id }}" style="display:none;">
+                    {{ projekt.name }}
+                  </option>
+                {% endfor %}
               {% endfor %}
             </select>
           </div>
@@ -68,11 +89,16 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
+    var isLcars = document.documentElement.getAttribute('data-bs-theme') === 'lcars';
     var calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
+      height: isLcars ? '100%' : undefined,
+      expandRows: isLcars,
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
@@ -81,6 +107,14 @@
       selectable: true,
       editable: true,
       events: '/api/logs',
+      eventDidMount: function(info) {
+        var props = info.event.extendedProps;
+        var tooltip = props.zakazka_name + ' > ' + props.projekt_name;
+        if (props.note) {
+          tooltip += '\n' + props.note;
+        }
+        info.el.setAttribute('title', tooltip);
+      },
       dateClick: function(info) {
         var view = calendar.view.type;
         if (view === 'dayGridMonth' || view === 'timeGridWeek') {
@@ -160,15 +194,51 @@
     });
   });
 
+  // Filtruje projekty podle vybrané zakázky
+  function filterProjects() {
+    var zakazkaId = document.getElementById('log-zakazka').value;
+    var projectSelect = document.getElementById('log-project');
+    var options = projectSelect.querySelectorAll('option');
+
+    // Reset výběru projektu
+    projectSelect.value = '';
+
+    // Zobraz/skryj projekty podle zakázky
+    options.forEach(function(option) {
+      if (option.value === '') {
+        option.style.display = zakazkaId ? 'none' : 'block';
+        option.textContent = zakazkaId ? '-- Vyberte projekt --' : '-- Nejdříve vyberte zakázku --';
+      } else {
+        var optionZakazka = option.getAttribute('data-zakazka');
+        option.style.display = (optionZakazka === zakazkaId) ? 'block' : 'none';
+      }
+    });
+  }
+
   // Otevře modal a naplní data
   function openLogModal(data) {
     var modalEl = document.getElementById('logModal');
     var modal = new bootstrap.Modal(modalEl);
     document.getElementById('log-id').value      = data.id || '';
-    document.getElementById('log-project').value = data.project_id || '';
     document.getElementById('log-start').value   = data.start ? data.start.slice(0,16) : '';
     document.getElementById('log-end').value     = data.end   ? data.end.slice(0,16)   : '';
     document.getElementById('log-note').value    = data.note  || '';
+
+    // Pokud máme project_id, najdeme zakázku a nastavíme oba selecty
+    if (data.project_id) {
+      var projectOption = document.querySelector('#log-project option[value="' + data.project_id + '"]');
+      if (projectOption) {
+        var zakazkaId = projectOption.getAttribute('data-zakazka');
+        document.getElementById('log-zakazka').value = zakazkaId;
+        filterProjects();
+        document.getElementById('log-project').value = data.project_id;
+      }
+    } else {
+      // Reset výběru
+      document.getElementById('log-zakazka').value = '';
+      filterProjects();
+    }
+
     modal.show();
   }
 </script>

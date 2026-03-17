@@ -29,45 +29,55 @@
             </div>
         </div>
 
-        <!-- Nastavení projektů -->
+        <!-- Nastavení zakázek -->
         <div class="card">
             <div class="card-header">
-                <h5>Nastavení projektů</h5>
+                <h5>Nastavení zakázek</h5>
+                <p class="text-muted mb-0">Fakturace je na úrovni zakázky - všechny projekty pod zakázkou se fakturují společně.</p>
             </div>
             <div class="card-body">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Projekt</th>
-                            <th>ID kontaktu</th>
+                            <th>Zakázka</th>
+                            <th>ID kontaktu (iDoklad)</th>
                             <th>Název položky</th>
-                            <th>Sazba/hod</th>
+                            <th>Sazba/hod (Kč)</th>
                             <th>Hodin/MD</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for project in projects %}
-                        {% set settings = invoice_settings|selectattr('project_id', 'equalto', project.id)|first %}
+                        {% for zakazka in zakazky %}
+                        {% set settings = invoice_settings|selectattr('zakazka_id', 'equalto', zakazka.id)|first %}
                         <tr>
-                            <td>{{ project.name }}</td>
                             <td>
-                                <input type="text" class="form-control form-control-sm" 
-                                       name="contact_{{ project.id }}"
-                                       value="{{ settings.idoklad_contact_id if settings else '' }}">
+                                <strong style="color: {{ zakazka.color }};">{{ zakazka.name }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {{ zakazka.projekty|length }} projekt(ů)
+                                </small>
                             </td>
                             <td>
-                                <input type="text" class="form-control form-control-sm" 
-                                       name="item_{{ project.id }}"
-                                       value="{{ settings.idoklad_item_name if settings else '' }}">
+                                <input type="text" class="form-control form-control-sm"
+                                       name="contact_{{ zakazka.id }}"
+                                       value="{{ settings.idoklad_contact_id if settings else '' }}"
+                                       placeholder="ID kontaktu">
                             </td>
                             <td>
-                                <input type="number" class="form-control form-control-sm" 
-                                       name="rate_{{ project.id }}" step="0.01"
-                                       value="{{ settings.hourly_rate if settings else '' }}">
+                                <input type="text" class="form-control form-control-sm"
+                                       name="item_{{ zakazka.id }}"
+                                       value="{{ settings.idoklad_item_name if settings else '' }}"
+                                       placeholder="Softwarový vývoj">
                             </td>
                             <td>
-                                <input type="number" class="form-control form-control-sm" 
-                                       name="md_{{ project.id }}" step="0.5"
+                                <input type="number" class="form-control form-control-sm"
+                                       name="rate_{{ zakazka.id }}" step="0.01"
+                                       value="{{ settings.hourly_rate if settings else '' }}"
+                                       placeholder="1000">
+                            </td>
+                            <td>
+                                <input type="number" class="form-control form-control-sm"
+                                       name="md_{{ zakazka.id }}" step="0.5"
                                        value="{{ settings.hours_per_md if settings else '8' }}">
                             </td>
                         </tr>

@@ -9,42 +9,91 @@
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title">Filtry</h5>
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label for="filterProject" class="form-label">Projekt</label>
-                    <select class="form-select" id="filterProject">
-                        <option value="">Všechny projekty</option>
-                        {% for project in projects %}
-                        <option value="{{ project.id }}">{{ project.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="filterDateFrom" class="form-label">Od data</label>
-                    <input type="date" class="form-control" id="filterDateFrom">
-                </div>
-                <div class="col-md-3">
-                    <label for="filterDateTo" class="form-label">Do data</label>
-                    <input type="date" class="form-control" id="filterDateTo">
-                </div>
-                <div class="col-md-3">
-                    <label for="filterSearch" class="form-label">Hledat v poznámkách</label>
-                    <input type="text" class="form-control" id="filterSearch" placeholder="Text...">
-                </div>
+
+            <!-- Rychlé filtry -->
+            <div class="btn-group mb-3" role="group" aria-label="Rychlé filtry">
+                <a href="?quick=today" class="btn btn-sm {% if filters.quick == 'today' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Dnes
+                </a>
+                <a href="?quick=yesterday" class="btn btn-sm {% if filters.quick == 'yesterday' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Včera
+                </a>
+                <a href="?quick=week" class="btn btn-sm {% if filters.quick == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Tento týden
+                </a>
+                <a href="?quick=month" class="btn btn-sm {% if filters.quick == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Tento měsíc
+                </a>
+                <a href="/logs" class="btn btn-sm {% if not filters.quick %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Vše
+                </a>
             </div>
-            <div class="row mt-3">
-                <div class="col">
-                    <button class="btn btn-primary" onclick="applyFilters()">
-                        <i class="bi bi-funnel"></i> Aplikovat filtry
-                    </button>
-                    <button class="btn btn-secondary" onclick="resetFilters()">
-                        <i class="bi bi-arrow-counterclockwise"></i> Resetovat
-                    </button>
-                    <span class="ms-3 text-muted" id="recordsInfo">
-                        Zobrazeno {{ logs|length }} záznamů
-                    </span>
+
+            <form method="GET" action="/logs" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="filterZakazka" class="form-label">Zakázka</label>
+                        <select class="form-select" id="filterZakazka" name="zakazka_id">
+                            <option value="">Všechny zakázky</option>
+                            {% for zakazka in zakazky %}
+                            <option value="{{ zakazka.id }}" {% if filters.zakazka_id == zakazka.id|string %}selected{% endif %}>
+                                {{ zakazka.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filterProject" class="form-label">Projekt</label>
+                        <select class="form-select" id="filterProject" name="project_id">
+                            <option value="">Všechny projekty</option>
+                            {% for zakazka in zakazky %}
+                                <optgroup label="{{ zakazka.name }}">
+                                {% for projekt in zakazka.projekty %}
+                                <option value="{{ projekt.id }}" {% if filters.project_id == projekt.id|string %}selected{% endif %}>
+                                    {{ projekt.name }}
+                                </option>
+                                {% endfor %}
+                                </optgroup>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="filterDateFrom" class="form-label">Od data</label>
+                        <input type="date" class="form-control" id="filterDateFrom" name="date_from" value="{{ filters.date_from }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="filterDateTo" class="form-label">Do data</label>
+                        <input type="date" class="form-control" id="filterDateTo" name="date_to" value="{{ filters.date_to }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="filterStatus" class="form-label">Status</label>
+                        <select class="form-select" id="filterStatus" name="status">
+                            <option value="">Vše</option>
+                            <option value="running" {% if filters.status == 'running' %}selected{% endif %}>Probíhá</option>
+                            <option value="completed" {% if filters.status == 'completed' %}selected{% endif %}>Dokončeno</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label for="filterSearch" class="form-label">Hledat v poznámkách</label>
+                        <input type="text" class="form-control" id="filterSearch" name="search" placeholder="Text..." value="{{ filters.search }}">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-funnel"></i> Aplikovat filtry
+                        </button>
+                        <a href="/logs" class="btn btn-secondary">
+                            <i class="bi bi-arrow-counterclockwise"></i> Resetovat
+                        </a>
+                        <span class="ms-3 text-muted">
+                            Zobrazeno {{ logs|length }} záznamů
+                        </span>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -53,6 +102,7 @@
         <table class="table table-striped table-hover">
             <thead class="table-dark">
                 <tr>
+                    <th>Zakázka</th>
                     <th>Projekt</th>
                     <th>Datum</th>
                     <th>Začátek</th>
@@ -65,8 +115,9 @@
             </thead>
             <tbody id="logsTableBody">
                 {% for log in logs %}
-                <tr>
-                    <td>{{ log.project_name }}</td>
+                <tr style="border-left: 4px solid {{ log.projekt_color }};">
+                    <td><strong>{{ log.zakazka_name }}</strong></td>
+                    <td>{{ log.projekt_name }}</td>
                     <td>{{ log.start_time.strftime('%d.%m.%Y') if log.start_time else '-' }}</td>
                     <td>{{ log.start_time.strftime('%H:%M') if log.start_time else '-' }}</td>
                     <td>
@@ -125,15 +176,15 @@
     <nav aria-label="Stránkování">
         <ul class="pagination justify-content-center">
             <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('logs', page=pagination.prev_num) if pagination.has_prev else '#' }}">
+                <a class="page-link" href="{{ url_for('logs', page=pagination.prev_num, project_id=filters.project_id, zakazka_id=filters.zakazka_id, date_from=filters.date_from, date_to=filters.date_to, status=filters.status, search=filters.search, quick=filters.quick) if pagination.has_prev else '#' }}">
                     Předchozí
                 </a>
             </li>
-            
+
             {% for page_num in pagination.iter_pages(left_edge=1, left_current=2, right_current=3, right_edge=1) %}
                 {% if page_num %}
                     <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('logs', page=page_num) }}">{{ page_num }}</a>
+                        <a class="page-link" href="{{ url_for('logs', page=page_num, project_id=filters.project_id, zakazka_id=filters.zakazka_id, date_from=filters.date_from, date_to=filters.date_to, status=filters.status, search=filters.search, quick=filters.quick) }}">{{ page_num }}</a>
                     </li>
                 {% else %}
                     <li class="page-item disabled">
@@ -141,9 +192,9 @@
                     </li>
                 {% endif %}
             {% endfor %}
-            
+
             <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('logs', page=pagination.next_num) if pagination.has_next else '#' }}">
+                <a class="page-link" href="{{ url_for('logs', page=pagination.next_num, project_id=filters.project_id, zakazka_id=filters.zakazka_id, date_from=filters.date_from, date_to=filters.date_to, status=filters.status, search=filters.search, quick=filters.quick) if pagination.has_next else '#' }}">
                     Další
                 </a>
             </li>
@@ -155,94 +206,6 @@
 
 {% block scripts %}
 <script>
-    let currentPage = 1;
-    const perPage = 50;
-
-    function applyFilters() {
-        const project = document.getElementById('filterProject').value;
-        const dateFrom = document.getElementById('filterDateFrom').value;
-        const dateTo = document.getElementById('filterDateTo').value;
-        const search = document.getElementById('filterSearch').value;
-        
-        fetchFilteredLogs(project, dateFrom, dateTo, search, 1);
-    }
-
-    function resetFilters() {
-        document.getElementById('filterProject').value = '';
-        document.getElementById('filterDateFrom').value = '';
-        document.getElementById('filterDateTo').value = '';
-        document.getElementById('filterSearch').value = '';
-        location.reload();
-    }
-
-    async function fetchFilteredLogs(projectId, dateFrom, dateTo, search, page) {
-        const params = new URLSearchParams({
-            page: page,
-            per_page: perPage
-        });
-        
-        if (projectId) params.append('project_id', projectId);
-        if (dateFrom) params.append('date_from', dateFrom);
-        if (dateTo) params.append('date_to', dateTo);
-        if (search) params.append('search', search);
-        
-        try {
-            const response = await fetch(`/api/logs?${params}`);
-            const data = await response.json();
-            
-            updateTable(data.logs);
-            updatePagination(data);
-            document.getElementById('recordsInfo').textContent = `Zobrazeno ${data.logs.length} z ${data.total} záznamů`;
-        } catch (error) {
-            console.error('Chyba při načítání dat:', error);
-        }
-    }
-
-    function updateTable(logs) {
-        const tbody = document.getElementById('logsTableBody');
-        tbody.innerHTML = '';
-        
-        logs.forEach(log => {
-            const row = tbody.insertRow();
-            row.innerHTML = `
-                <td>${log.project_name}</td>
-                <td>${log.start_time ? new Date(log.start_time).toLocaleDateString('cs-CZ') : '-'}</td>
-                <td>${log.start_time ? new Date(log.start_time).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'}) : '-'}</td>
-                <td>${log.end_time ? new Date(log.end_time).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'}) : '<span class="badge bg-success">Probíhá</span>'}</td>
-                <td>${formatPause(log)}</td>
-                <td title="${log.note || ''}">${log.note ? (log.note.substring(0, 30) + (log.note.length > 30 ? '...' : '')) : '-'}</td>
-                <td><strong>${log.hours ? log.hours.toFixed(2) : '-'}</strong></td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <a href="/logs/edit/${log.id}" class="btn btn-outline-primary" title="Upravit">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <form method="POST" action="/logs/delete/${log.id}" style="display: inline;" 
-                              onsubmit="return confirm('Opravdu chcete smazat tento záznam?');">
-                            <button type="submit" class="btn btn-outline-danger" title="Smazat">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
-                    </div>
-                </td>
-            `;
-        });
-    }
-
-    function formatPause(log) {
-        if (log.pause_start && log.pause_end) {
-            const start = new Date(log.pause_start).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'});
-            const end = new Date(log.pause_end).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute: '2-digit'});
-            return `${start} - ${end}`;
-        } else if (log.pause_start) {
-            return '<span class="badge bg-warning">Pauza</span>';
-        }
-        return '-';
-    }
-
-    function updatePagination(data) {
-        // Zde by byla implementace aktualizace stránkování
-        // Pro jednoduchost zatím necháme původní stránkování
-    }
+    // Filtry nyní fungují přes formulář - není potřeba složitý JavaScript
 </script>
 {% endblock %}

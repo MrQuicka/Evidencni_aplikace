@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('zakazky') }}">Zakázky</a></li>
+            <li class="breadcrumb-item active">{{ zakazka.name }}</li>
+            <li class="breadcrumb-item active">Projekty</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">Projekty: {{ zakazka.name }}</h1>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="alert alert-info alert-dismissible fade show">
+                {% for message in messages %}
+                    {{ message }}
+                {% endfor %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Existující projekty</h5>
+                </div>
+                <div class="card-body">
+                    {% if projekty %}
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Název</th>
+                                    <th>Barva</th>
+                                    <th>Status</th>
+                                    <th>Vytvořeno</th>
+                                    <th>Akce</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for projekt in projekty %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ projekt.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="background-color: {{ projekt.color }};">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                                    </td>
+                                    <td>
+                                        {% if projekt.is_active %}
+                                            <span class="badge bg-success">Aktivní</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Neaktivní</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-muted small">
+                                        {{ projekt.created_at.strftime('%d.%m.%Y') if projekt.created_at else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                                                data-bs-toggle="modal" data-bs-target="#editProjektModal{{ projekt.id }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <form method="post" action="{{ url_for('delete_projekt', projekt_id=projekt.id) }}"
+                                              onsubmit="return confirm('Opravdu smazat projekt {{ projekt.name }}?');" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                    {% if projekty|length <= 1 %}disabled title="Nelze smazat poslední projekt"{% endif %}>
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% for projekt in projekty %}
+                        <!-- Modal pro editaci projektu -->
+                        <div class="modal fade" id="editProjektModal{{ projekt.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="post" action="{{ url_for('edit_projekt', projekt_id=projekt.id) }}">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Upravit projekt</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label for="editProjektName{{ projekt.id }}" class="form-label">Název *</label>
+                                                <input type="text" class="form-control" id="editProjektName{{ projekt.id }}"
+                                                       name="name" value="{{ projekt.name }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="editProjektColor{{ projekt.id }}" class="form-label">Barva</label>
+                                                <input type="color" class="form-control form-control-color"
+                                                       id="editProjektColor{{ projekt.id }}" name="color" value="{{ projekt.color }}">
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zrušit</button>
+                                            <button type="submit" class="btn btn-primary">Uložit</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">Zatím nejsou žádné projekty.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Přidat nový projekt</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Název projektu *</label>
+                            <input type="text" class="form-control" id="name" name="name"
+                                   placeholder="např. Modul X" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="color" class="form-label">Barva</label>
+                            <input type="color" class="form-control form-control-color" id="color" name="color"
+                                   value="#28a745" title="Vyberte barvu pro projekt">
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Přidat projekt
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">Informace</h6>
+                    <p class="card-text small text-muted">
+                        Projekty slouží k organizaci práce v rámci zakázky.
+                        Můžete vytvořit různé projekty pro různé části zakázky.
+                    </p>
+                    <p class="card-text small text-muted">
+                        <strong>Poznámka:</strong> Projekt nelze smazat, pokud obsahuje záznamy práce.
+                        Zakázka musí mít vždy alespoň jeden projekt.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

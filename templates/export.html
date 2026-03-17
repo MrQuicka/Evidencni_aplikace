@@ -7,13 +7,44 @@
   <form action="{{ url_for('export_excel') }}" method="get" class="mb-4">
     <h4>Export do Excelu</h4>
     <div class="mb-3">
-      <label for="projectSelectExcel" class="form-label">Vyber projekt:</label>
-      <select name="project_id" id="projectSelectExcel" class="form-select">
-        <option value="all">Všechny projekty</option>
-        {% for project in projects %}
-          <option value="{{ project.id }}">{{ project.name }}</option>
+      <label class="form-label d-flex justify-content-between align-items-center">
+        <span>Vyber projekty:</span>
+        <small class="text-muted" id="selectedCountExcel">Vybráno: 0</small>
+      </label>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="all_projects" id="allProjectsExcel" value="1" onchange="toggleAllProjects('Excel', this.checked)">
+        <label class="form-check-label fw-bold" for="allProjectsExcel">
+          Všechny projekty
+        </label>
+      </div>
+      <hr class="my-2">
+      <div id="projectListExcel">
+        {% for zakazka in zakazky %}
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input zakazka-checkbox-excel" type="checkbox"
+                   id="zakazkaExcel{{ zakazka.id }}"
+                   onchange="toggleZakazkaProjects('Excel', {{ zakazka.id }}, this.checked)">
+            <label class="form-check-label fw-bold" for="zakazkaExcel{{ zakazka.id }}" style="color: {{ zakazka.color }};">
+              {{ zakazka.name }}
+            </label>
+          </div>
+          <div class="ms-4">
+            {% for projekt in zakazka.projekty %}
+            <div class="form-check">
+              <input class="form-check-input project-checkbox-excel zakazka-{{ zakazka.id }}-excel"
+                     type="checkbox" name="project_ids" value="{{ projekt.id }}"
+                     id="projectExcel{{ projekt.id }}"
+                     onchange="updateSelectedCount('Excel')">
+              <label class="form-check-label" for="projectExcel{{ projekt.id }}">
+                {{ projekt.name }}
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
         {% endfor %}
-      </select>
+      </div>
     </div>
     <div class="mb-3">
       <label for="monthInputExcel" class="form-label">Vyber měsíc:</label>
@@ -63,13 +94,44 @@
   <form action="{{ url_for('export_csv') }}" method="get" class="mb-4">
     <h4>Export do CSV</h4>
     <div class="mb-3">
-      <label for="projectSelectCSV" class="form-label">Vyber projekt:</label>
-      <select name="project_id" id="projectSelectCSV" class="form-select">
-        <option value="all">Všechny projekty</option>
-        {% for project in projects %}
-          <option value="{{ project.id }}">{{ project.name }}</option>
+      <label class="form-label d-flex justify-content-between align-items-center">
+        <span>Vyber projekty:</span>
+        <small class="text-muted" id="selectedCountCSV">Vybráno: 0</small>
+      </label>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="all_projects" id="allProjectsCSV" value="1" onchange="toggleAllProjects('CSV', this.checked)">
+        <label class="form-check-label fw-bold" for="allProjectsCSV">
+          Všechny projekty
+        </label>
+      </div>
+      <hr class="my-2">
+      <div id="projectListCSV">
+        {% for zakazka in zakazky %}
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input zakazka-checkbox-csv" type="checkbox"
+                   id="zakazkaCSV{{ zakazka.id }}"
+                   onchange="toggleZakazkaProjects('CSV', {{ zakazka.id }}, this.checked)">
+            <label class="form-check-label fw-bold" for="zakazkaCSV{{ zakazka.id }}" style="color: {{ zakazka.color }};">
+              {{ zakazka.name }}
+            </label>
+          </div>
+          <div class="ms-4">
+            {% for projekt in zakazka.projekty %}
+            <div class="form-check">
+              <input class="form-check-input project-checkbox-csv zakazka-{{ zakazka.id }}-csv"
+                     type="checkbox" name="project_ids" value="{{ projekt.id }}"
+                     id="projectCSV{{ projekt.id }}"
+                     onchange="updateSelectedCount('CSV')">
+              <label class="form-check-label" for="projectCSV{{ projekt.id }}">
+                {{ projekt.name }}
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
         {% endfor %}
-      </select>
+      </div>
     </div>
     <div class="mb-3">
       <label for="monthInputCSV" class="form-label">Vyber měsíc:</label>
@@ -113,4 +175,52 @@
     <button type="submit" class="btn btn-success">Exportovat do CSV</button>
   </form>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleAllProjects(type, checked) {
+    const checkboxes = document.querySelectorAll('.project-checkbox-' + type.toLowerCase());
+    const zakazkaCheckboxes = document.querySelectorAll('.zakazka-checkbox-' + type.toLowerCase());
+    checkboxes.forEach(cb => {
+      cb.checked = checked;
+      cb.disabled = checked;
+    });
+    zakazkaCheckboxes.forEach(cb => {
+      cb.checked = checked;
+      cb.disabled = checked;
+    });
+    updateSelectedCount(type);
+  }
+
+  function toggleZakazkaProjects(type, zakazkaId, checked) {
+    const checkboxes = document.querySelectorAll('.zakazka-' + zakazkaId + '-' + type.toLowerCase());
+    checkboxes.forEach(cb => {
+      cb.checked = checked;
+    });
+    updateSelectedCount(type);
+  }
+
+  function updateSelectedCount(type) {
+    const checkboxes = document.querySelectorAll('.project-checkbox-' + type.toLowerCase());
+    const allCheckbox = document.getElementById('allProjects' + type);
+    const counter = document.getElementById('selectedCount' + type);
+
+    if (allCheckbox.checked) {
+      counter.textContent = 'Vybráno: Všechny projekty';
+    } else {
+      const selected = Array.from(checkboxes).filter(cb => cb.checked && !cb.disabled).length;
+      const total = checkboxes.length;
+      counter.textContent = `Vybráno: ${selected} z ${total}`;
+    }
+  }
+
+  // Při načtení stránky zaškrtnout "Všechny projekty" jako výchozí
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('allProjectsExcel').checked = true;
+    document.getElementById('allProjectsCSV').checked = true;
+    toggleAllProjects('Excel', true);
+    toggleAllProjects('CSV', true);
+  });
+</script>
 {% endblock %}

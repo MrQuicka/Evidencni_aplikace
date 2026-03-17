@@ -9,7 +9,7 @@ import csv
 import io
 import xlsxwriter
 from dateutil.relativedelta import relativedelta
-from models import db, User, Project, LogEntry, TaskTemplate
+from models import db, User, Zakazka, Projekt, LogEntry, TaskTemplate, Project
 from models_invoice import InvoiceSettings, UserSettings, InvoiceHistory
 from idoklad_api import IDokladAPI
 
@@ -68,9 +68,176 @@ def load_user(user_id):
 def test():
     return "Test OK", 200
 
+# --------------------------------------------------
+#           NOVÉ ROUTY PRO ZAKÁZKY A PROJEKTY
+# --------------------------------------------------
+
+@app.route('/zakazky')
+@login_required
+def zakazky():
+    """Seznam zakázek uživatele s projekty"""
+    zakazky_list = Zakazka.query.filter_by(user_id=current_user.id)\
+        .options(db.joinedload(Zakazka.projekty)).all()
+    return render_template('zakazky.html', zakazky=zakazky_list)
+
+@app.route('/zakazky/create', methods=['GET', 'POST'])
+@login_required
+def create_zakazka():
+    """Vytvoření zakázky + výchozího projektu"""
+    if request.method == 'POST':
+        name = request.form.get('name')
+        color = request.form.get('color', '#0d6efd')
+
+        new_zakazka = Zakazka(name=name, user_id=current_user.id, color=color)
+        db.session.add(new_zakazka)
+        db.session.commit()
+
+        # Vytvoř výchozí projekt
+        default_projekt = Projekt(
+            name=f"{name} - Všeobecné práce",
+            zakazka_id=new_zakazka.id
+        )
+        db.session.add(default_projekt)
+        db.session.commit()
+
+        flash(f'Zakázka "{name}" byla vytvořena.')
+        return redirect(url_for('zakazky'))
+
+    return render_template('create_zakazka.html')
+
+@app.route('/zakazky/<int:zakazka_id>/projekty', methods=['GET', 'POST'])
+@login_required
+def manage_projekty(zakazka_id):
+    """Správa projektů pod zakázkou"""
+    zakazka = Zakazka.query.get_or_404(zakazka_id)
+    if zakazka.user_id != current_user.id:
+        flash('Nemáte oprávnění spravovat tuto zakázku.')
+        return redirect(url_for('zakazky'))
+
+    if request.method == 'POST':
+        name = request.form.get('name')
+        color = request.form.get('color', '#28a745')
+        projekt = Projekt(name=name, zakazka_id=zakazka_id, color=color)
+        db.session.add(projekt)
+        db.session.commit()
+        flash(f'Projekt "{name}" byl přidán.')
+
+    projekty_list = Projekt.query.filter_by(zakazka_id=zakazka_id).all()
+    return render_template('manage_projekty.html',
+                          zakazka=zakazka, projekty=projekty_list)
+
+@app.route('/zakazky/delete/<int:zakazka_id>', methods=['POST'])
+@login_required
+def delete_zakazka(zakazka_id):
+    """Smazání/archivace zakázky"""
+    zakazka = Zakazka.query.get_or_404(zakazka_id)
+    if zakazka.user_id != current_user.id:
+        flash('Nemáte oprávnění smazat tuto zakázku.')
+        return redirect(url_for('zakazky'))
+
+    # Zkontroluj log entries
+    total_logs = db.session.query(func.count(LogEntry.id))\
+        .join(Projekt).filter(Projekt.zakazka_id == zakazka_id).scalar()
+
+    if total_logs > 0:
+        # Místo smazání zakázku archivujeme
+        zakazka.is_active = False
+        db.session.commit()
+        flash(f'Zakázka byla archivována (má {total_logs} záznamů).')
+    else:
+        db.session.delete(zakazka)
+        db.session.commit()
+        flash('Zakázka byla smazána.')
+
+    return redirect(url_for('zakazky'))
+
+@app.route('/zakazky/toggle/<int:zakazka_id>', methods=['POST'])
+@login_required
+def toggle_zakazka(zakazka_id):
+    """Aktivace/deaktivace zakázky"""
+    zakazka = Zakazka.query.get_or_404(zakazka_id)
+    if zakazka.user_id != current_user.id:
+        flash('Nemáte oprávnění upravit tuto zakázku.')
+        return redirect(url_for('zakazky'))
+
+    zakazka.is_active = not zakazka.is_active
+    db.session.commit()
+    status = "aktivována" if zakazka.is_active else "archivována"
+    flash(f'Zakázka byla {status}.')
+    return redirect(url_for('zakazky'))
+
+@app.route('/zakazky/edit/<int:zakazka_id>', methods=['POST'])
+@login_required
+def edit_zakazka(zakazka_id):
+    """Úprava názvu a barvy zakázky"""
+    zakazka = Zakazka.query.get_or_404(zakazka_id)
+    if zakazka.user_id != current_user.id:
+        flash('Nemáte oprávnění upravit tuto zakázku.')
+        return redirect(url_for('zakazky'))
+
+    name = request.form.get('name', '').strip()
+    color = request.form.get('color', zakazka.color)
+
+    if not name:
+        flash('Název zakázky nemůže být prázdný.')
+        return redirect(url_for('zakazky'))
+
+    zakazka.name = name
+    zakazka.color = color
+    db.session.commit()
+    flash(f'Zakázka byla přejmenována na "{name}".')
+    return redirect(url_for('zakazky'))
+
+@app.route('/projekty/edit/<int:projekt_id>', methods=['POST'])
+@login_required
+def edit_projekt(projekt_id):
+    """Úprava názvu a barvy projektu"""
+    projekt = Projekt.query.get_or_404(projekt_id)
+    if projekt.zakazka.user_id != current_user.id:
+        flash('Nemáte oprávnění upravit tento projekt.')
+        return redirect(url_for('zakazky'))
+
+    name = request.form.get('name', '').strip()
+    color = request.form.get('color', projekt.color)
+
+    if not name:
+        flash('Název projektu nemůže být prázdný.')
+        return redirect(url_for('manage_projekty', zakazka_id=projekt.zakazka_id))
+
+    projekt.name = name
+    projekt.color = color
+    db.session.commit()
+    flash(f'Projekt byl přejmenován na "{name}".')
+    return redirect(url_for('manage_projekty', zakazka_id=projekt.zakazka_id))
+
+@app.route('/projekty/delete/<int:projekt_id>', methods=['POST'])
+@login_required
+def delete_projekt(projekt_id):
+    """Smazání projektu"""
+    projekt = Projekt.query.get_or_404(projekt_id)
+    if projekt.zakazka.user_id != current_user.id:
+        flash('Nemáte oprávnění smazat tento projekt.')
+        return redirect(url_for('zakazky'))
+
+    # Zjisti počet projektů v zakázce
+    projekty_count = Projekt.query.filter_by(zakazka_id=projekt.zakazka_id).count()
+
+    if projekty_count <= 1:
+        flash('Nelze smazat poslední projekt v zakázce.')
+        return redirect(url_for('manage_projekty', zakazka_id=projekt.zakazka_id))
+
+    if projekt.logs:
+        flash(f'Nelze smazat projekt s {len(projekt.logs)} existujícími záznamy.')
+        return redirect(url_for('manage_projekty', zakazka_id=projekt.zakazka_id))
+
+    zakazka_id = projekt.zakazka_id
+    db.session.delete(projekt)
+    db.session.commit()
+    flash('Projekt byl smazán.')
+    return redirect(url_for('manage_projekty', zakazka_id=zakazka_id))
+
 @app.route('/')
 @login_required
-
 def dashboard():
     """Úvodní dashboard s přehledem statistik."""
     today = datetime.now().date()
@@ -119,8 +286,8 @@ def dashboard():
                 minutes -= (log.pause_end - log.pause_start).total_seconds() / 60.0
             month_hours += minutes / 60.0
     
-    # Aktivní projekty
-    active_projects = Project.query.filter_by(user_id=current_user.id).count()
+    # Aktivní zakázky
+    active_zakazky = Zakazka.query.filter_by(user_id=current_user.id, is_active=True).count()
     
     # Posledních 5 záznamů
     recent_logs = LogEntry.query.filter_by(user_id=current_user.id)\
@@ -133,28 +300,33 @@ def dashboard():
         end_time=None
     ).first()
     
-    # Top 3 projekty tento měsíc
-    top_projects = db.session.query(
-        Project.name,
+    # Top 3 zakázky tento měsíc
+    top_zakazky = db.session.query(
+        Zakazka.name,
+        Zakazka.color,
         func.sum(
-            func.timestampdiff(text('MINUTE'), LogEntry.start_time, LogEntry.end_time) 
+            func.timestampdiff(text('MINUTE'), LogEntry.start_time, LogEntry.end_time)
             - func.coalesce(
                 func.timestampdiff(text('MINUTE'), LogEntry.pause_start, LogEntry.pause_end), 0
             )
         ) / 60.0
-    ).join(Project).filter(
+    ).select_from(LogEntry)\
+     .join(Projekt, LogEntry.project_id == Projekt.id)\
+     .join(Zakazka, Projekt.zakazka_id == Zakazka.id)\
+     .filter(
         LogEntry.user_id == current_user.id,
+        LogEntry.end_time.isnot(None),
         func.date(LogEntry.start_time) >= month_start
-    ).group_by(Project.name).order_by(text('2 DESC')).limit(3).all()
-    
+    ).group_by(Zakazka.name, Zakazka.color).order_by(text('3 DESC')).limit(3).all()
+
     return render_template('dashboard.html',
                           today_hours=round(today_hours, 2),
                           week_hours=round(week_hours, 2),
                           month_hours=round(month_hours, 2),
-                          active_projects=active_projects,
+                          active_zakazky=active_zakazky,
                           recent_logs=recent_logs,
                           active_log=active_log,
-                          top_projects=top_projects)
+                          top_zakazky=top_zakazky)
 
 @app.route('/api/logs')
 @login_required
@@ -222,7 +394,9 @@ def api_logs():
 @login_required
 def calendar_view():
     templates = TaskTemplate.query.filter_by(user_id=current_user.id).all()
-    return render_template('calendar.html', templates=templates)
+    zakazky = Zakazka.query.filter_by(user_id=current_user.id)\
+        .options(db.joinedload(Zakazka.projekty)).all()
+    return render_template('calendar.html', templates=templates, zakazky=zakazky)
 
 # --------------------------------------------------
 #              PŮVODNÍ ROUTY (upravené)
@@ -296,7 +470,10 @@ def delete_project(project_id):
 @app.route('/log', methods=['GET', 'POST'])
 @login_required
 def log_time():
-    projects = Project.query.filter_by(user_id=current_user.id).all()
+    # Načti zakázky s projekty pro hierarchický select
+    zakazky_list = Zakazka.query.filter_by(user_id=current_user.id, is_active=True)\
+        .options(db.joinedload(Zakazka.projekty)).all()
+
     if request.method == 'POST':
         project_id = request.form.get('project_id')
         action = request.form.get('action')
@@ -351,7 +528,7 @@ def log_time():
             flash('Neznámá akce.')
         return redirect(url_for('log_time'))
 
-    return render_template('log_time.html', projects=projects)
+    return render_template('log_time.html', zakazky=zakazky_list)
 
 @app.route('/logs')
 @login_required
@@ -360,12 +537,63 @@ def logs():
     # Parametry z URL
     page = request.args.get('page', 1, type=int)
     per_page = 50  # Pevný počet záznamů na stránku
-    
-    # Základní query s stránkováním
-    pagination = LogEntry.query.filter_by(user_id=current_user.id)\
-                               .order_by(LogEntry.start_time.desc())\
-                               .paginate(page=page, per_page=per_page, error_out=False)
-    
+    search = request.args.get('search', '')
+    project_id = request.args.get('project_id', '')
+    zakazka_id = request.args.get('zakazka_id', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    status = request.args.get('status', '')  # running, completed, all
+    quick_filter = request.args.get('quick', '')  # today, yesterday, week, month
+
+    # Základní query
+    query = LogEntry.query.filter_by(user_id=current_user.id)
+
+    # Rychlé filtry
+    today = date.today()
+    if quick_filter == 'today':
+        date_from = today.isoformat()
+        date_to = today.isoformat()
+    elif quick_filter == 'yesterday':
+        yesterday = today - timedelta(days=1)
+        date_from = yesterday.isoformat()
+        date_to = yesterday.isoformat()
+    elif quick_filter == 'week':
+        week_start = today - timedelta(days=today.weekday())
+        date_from = week_start.isoformat()
+        date_to = today.isoformat()
+    elif quick_filter == 'month':
+        month_start = today.replace(day=1)
+        date_from = month_start.isoformat()
+        date_to = today.isoformat()
+
+    # Filtrování podle zakázky
+    if zakazka_id:
+        query = query.join(Projekt).filter(Projekt.zakazka_id == int(zakazka_id))
+
+    # Filtrování podle projektu
+    if project_id:
+        query = query.filter(LogEntry.project_id == int(project_id))
+
+    # Filtrování podle data
+    if date_from:
+        query = query.filter(func.date(LogEntry.start_time) >= date_from)
+    if date_to:
+        query = query.filter(func.date(LogEntry.start_time) <= date_to)
+
+    # Filtrování podle statusu
+    if status == 'running':
+        query = query.filter(LogEntry.end_time == None)
+    elif status == 'completed':
+        query = query.filter(LogEntry.end_time != None)
+
+    # Vyhledávání v poznámkách
+    if search:
+        query = query.filter(LogEntry.note.contains(search))
+
+    # Stránkování
+    pagination = query.order_by(LogEntry.start_time.desc())\
+                     .paginate(page=page, per_page=per_page, error_out=False)
+
     logs_with_hours = []
     for log in pagination.items:
         total_minutes = 0
@@ -375,7 +603,10 @@ def logs():
             total_minutes -= (log.pause_end - log.pause_start).total_seconds() / 60.0
         logs_with_hours.append({
             "id": log.id,
-            "project_name": log.project.name if log.project else "",
+            "projekt_name": log.project.name if log.project else "",
+            "zakazka_name": log.project.zakazka.name if log.project and log.project.zakazka else "",
+            "projekt_color": log.project.color if log.project else "#28a745",
+            "zakazka_color": log.project.zakazka.color if log.project and log.project.zakazka else "#0d6efd",
             "start_time": log.start_time,
             "end_time": log.end_time,
             "pause_start": log.pause_start,
@@ -383,14 +614,24 @@ def logs():
             "note": log.note,
             "hours": total_minutes / 60.0
         })
-    
-    # Získáme všechny projekty pro filtr
-    projects = Project.query.filter_by(user_id=current_user.id).all()
-    
-    return render_template('logs.html', 
+
+    # Získáme všechny zakázky s projekty pro filtr
+    zakazky = Zakazka.query.filter_by(user_id=current_user.id)\
+        .options(db.joinedload(Zakazka.projekty)).all()
+
+    return render_template('logs.html',
                           logs=logs_with_hours,
                           pagination=pagination,
-                          projects=projects)
+                          zakazky=zakazky,
+                          filters={
+                              'search': search,
+                              'project_id': project_id,
+                              'zakazka_id': zakazka_id,
+                              'date_from': date_from,
+                              'date_to': date_to,
+                              'status': status,
+                              'quick': quick_filter
+                          })
 
 @app.route('/logs/delete/<int:log_id>', methods=['POST'])
 @login_required
@@ -425,8 +666,9 @@ def edit_log(log_id):
 @app.route('/export', methods=['GET'])
 @login_required
 def export():
-    projects = Project.query.filter_by(user_id=current_user.id).all()
-    return render_template('export.html', projects=projects)
+    zakazky = Zakazka.query.filter_by(user_id=current_user.id)\
+        .options(db.joinedload(Zakazka.projekty)).all()
+    return render_template('export.html', zakazky=zakazky)
 
 @app.route('/reports', methods=['GET'])
 @login_required
@@ -434,34 +676,14 @@ def reports_view():
     """Opravená verze reportů s funkčními filtry."""
     # Čtení filtrů
     period = request.args.get('period', 'monthly')
-    project_id = request.args.get('project_id', 'all')
+    zakazka_id = request.args.get('zakazka_id', 'all')
+    projekt_id = request.args.get('projekt_id', 'all')
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
-    # Načtení projektů pro dropdown
-    projects = Project.query.filter_by(user_id=current_user.id).all()
-
-    # Základní query s JOIN
-    query = db.session.query(
-        LogEntry, Project
-    ).join(
-        Project, Project.id == LogEntry.project_id
-    ).filter(
-        LogEntry.user_id == current_user.id,
-        LogEntry.end_time.isnot(None)  # Pouze dokončené záznamy
-    )
-    
-    # Filtry
-    if project_id != 'all':
-        query = query.filter(LogEntry.project_id == int(project_id))
-    
-    if start_date:
-        query = query.filter(LogEntry.start_time >= datetime.fromisoformat(start_date))
-    
-    if end_date:
-        # Přidat jeden den pro inclusive end date
-        end_dt = datetime.fromisoformat(end_date) + relativedelta(days=1)
-        query = query.filter(LogEntry.start_time < end_dt)
+    # Načtení zakázek s projekty pro dropdown
+    zakazky = Zakazka.query.filter_by(user_id=current_user.id)\
+        .options(db.joinedload(Zakazka.projekty)).all()
 
     # Seskupení podle periody
     if period == 'daily':
@@ -474,62 +696,97 @@ def reports_view():
         grouping = func.date_format(LogEntry.start_time, '%Y-%m')
         label_fmt = lambda m: m if m else ''
 
-    # Agregace dat
-    raw_data = db.session.query(
-        grouping.label('period'),
-        Project.name.label('project_name'),
-        func.sum(
-            func.timestampdiff(text('MINUTE'), LogEntry.start_time, LogEntry.end_time)
-            - func.coalesce(
-                func.timestampdiff(text('MINUTE'), LogEntry.pause_start, LogEntry.pause_end), 0
-            )
-        ).label('total_minutes')
-    ).join(
-        Project, Project.id == LogEntry.project_id
-    ).filter(
-        LogEntry.user_id == current_user.id,
-        LogEntry.end_time.isnot(None)
-    )
-    
-    # Aplikace filtrů na agregovaný dotaz
-    if project_id != 'all':
-        raw_data = raw_data.filter(LogEntry.project_id == int(project_id))
+    # Agregace dat - podle zakázky nebo projektu
+    # Rozhodneme se, zda agregovat podle zakázky nebo projektu
+    if zakazka_id != 'all' or projekt_id == 'all':
+        # Agreguj podle zakázek
+        raw_data = db.session.query(
+            grouping.label('period'),
+            Zakazka.name.label('group_name'),
+            Zakazka.color.label('group_color'),
+            func.sum(
+                func.timestampdiff(text('MINUTE'), LogEntry.start_time, LogEntry.end_time)
+                - func.coalesce(
+                    func.timestampdiff(text('MINUTE'), LogEntry.pause_start, LogEntry.pause_end), 0
+                )
+            ).label('total_minutes')
+        ).select_from(LogEntry)\
+         .join(Projekt, LogEntry.project_id == Projekt.id)\
+         .join(Zakazka, Projekt.zakazka_id == Zakazka.id)\
+         .filter(
+            LogEntry.user_id == current_user.id,
+            LogEntry.end_time.isnot(None)
+        )
+
+        # Filtr podle zakázky
+        if zakazka_id != 'all':
+            raw_data = raw_data.filter(Zakazka.id == int(zakazka_id))
+
+        raw_data = raw_data.group_by(grouping, Zakazka.name, Zakazka.color)
+    else:
+        # Agreguj podle projektů
+        raw_data = db.session.query(
+            grouping.label('period'),
+            Projekt.name.label('group_name'),
+            Projekt.color.label('group_color'),
+            func.sum(
+                func.timestampdiff(text('MINUTE'), LogEntry.start_time, LogEntry.end_time)
+                - func.coalesce(
+                    func.timestampdiff(text('MINUTE'), LogEntry.pause_start, LogEntry.pause_end), 0
+                )
+            ).label('total_minutes')
+        ).select_from(LogEntry)\
+         .join(Projekt, LogEntry.project_id == Projekt.id)\
+         .filter(
+            LogEntry.user_id == current_user.id,
+            LogEntry.end_time.isnot(None)
+        )
+
+        # Filtr podle projektu
+        if projekt_id != 'all':
+            raw_data = raw_data.filter(Projekt.id == int(projekt_id))
+
+        raw_data = raw_data.group_by(grouping, Projekt.name, Projekt.color)
+
+    # Aplikace společných filtrů
     if start_date:
         raw_data = raw_data.filter(LogEntry.start_time >= datetime.fromisoformat(start_date))
     if end_date:
         end_dt = datetime.fromisoformat(end_date) + relativedelta(days=1)
         raw_data = raw_data.filter(LogEntry.start_time < end_dt)
-    
-    raw_data = raw_data.group_by(grouping, Project.name).all()
+
+    raw_data = raw_data.all()
 
     # Pivot data pro graf
     pivot = {}
     proj_names = set()
-    
-    for per, name, minutes in raw_data:
+    color_map = {}
+
+    for per, name, color, minutes in raw_data:
         key = label_fmt(per)
         if key:  # Přeskočit prázdné klíče
             hours = float(minutes or 0) / 60.0
             pivot.setdefault(key, {})[name] = round(hours, 2)
             proj_names.add(name)
-    
+            color_map[name] = color or '#0d6efd'
+
     # Připravit data pro Chart.js
     labels = sorted(pivot.keys())
     datasets = []
-    colors = [
-        "rgba(54, 162, 235, 0.5)",
-        "rgba(255, 99, 132, 0.5)",
-        "rgba(255, 206, 86, 0.5)",
-        "rgba(75, 192, 192, 0.5)",
-        "rgba(153, 102, 255, 0.5)"
-    ]
-    
-    for i, name in enumerate(sorted(proj_names)):
+
+    def hex_to_rgba(hex_color, alpha=0.5):
+        hex_color = hex_color.lstrip('#')
+        r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+        return f"rgba({r}, {g}, {b}, {alpha})"
+
+    for name in sorted(proj_names):
+        bg_color = hex_to_rgba(color_map.get(name, '#0d6efd'), 0.5)
+        border_color = hex_to_rgba(color_map.get(name, '#0d6efd'), 1)
         dataset = {
             "label": name,
             "data": [pivot.get(l, {}).get(name, 0) for l in labels],
-            "backgroundColor": colors[i % len(colors)],
-            "borderColor": colors[i % len(colors)].replace('0.5', '1'),
+            "backgroundColor": bg_color,
+            "borderColor": border_color,
             "borderWidth": 1
         }
         datasets.append(dataset)
@@ -542,8 +799,9 @@ def reports_view():
     return render_template(
         'reports.html',
         period=period,
-        projects=projects,
-        project_id=project_id,
+        zakazky=zakazky,
+        zakazka_id=zakazka_id,
+        projekt_id=projekt_id,
         start_date=start_date,
         end_date=end_date,
         chart_data=chart_data,
@@ -554,17 +812,19 @@ def reports_view():
 @login_required
 def export_csv():
     """Export do CSV."""
-    project_id = request.args.get('project_id')
+    project_ids = request.args.getlist('project_ids')
+    all_projects = request.args.get('all_projects')
     month = request.args.get('month')
     selected_columns = request.args.getlist('columns')
-    
+
     if not selected_columns:
         selected_columns = [col[0] for col in ALL_COLUMNS]
-    
+
     query = LogEntry.query.filter_by(user_id=current_user.id)
-    
-    if project_id and project_id.lower() != 'all':
-        query = query.filter(LogEntry.project_id == int(project_id))
+
+    # Filtrování podle projektů
+    if not all_projects and project_ids:
+        query = query.filter(LogEntry.project_id.in_([int(pid) for pid in project_ids]))
     
     if month:
         start_date = datetime.strptime(month, '%Y-%m')
@@ -620,17 +880,19 @@ def export_csv():
 @app.route('/export/excel')
 @login_required
 def export_excel():
-    project_id = request.args.get('project_id')
+    project_ids = request.args.getlist('project_ids')
+    all_projects = request.args.get('all_projects')
     month = request.args.get('month')
     selected_columns = request.args.getlist('columns')
-    
+
     if not selected_columns:
         selected_columns = ['id', 'project', 'start_time', 'end_time', 'note', 'hours']
 
     query = LogEntry.query.filter_by(user_id=current_user.id)
-    
-    if project_id and project_id.lower() != 'all':
-        query = query.filter(LogEntry.project_id == int(project_id))
+
+    # Filtrování podle projektů
+    if not all_projects and project_ids:
+        query = query.filter(LogEntry.project_id.in_([int(pid) for pid in project_ids]))
     
     if month:
         start_date = datetime.strptime(month, '%Y-%m')
@@ -714,8 +976,9 @@ def export_excel():
 @login_required
 def templates():
     templates = TaskTemplate.query.filter_by(user_id=current_user.id).all()
-    projects = Project.query.filter_by(user_id=current_user.id).all()
-    return render_template('templates.html', templates=templates, projects=projects)
+    zakazky = Zakazka.query.filter_by(user_id=current_user.id)\
+        .options(db.joinedload(Zakazka.projekty)).all()
+    return render_template('templates.html', templates=templates, zakazky=zakazky)
 
 @app.route('/templates/create', methods=['POST'])
 @login_required
@@ -777,57 +1040,65 @@ def delete_template(template_id):
 @app.route('/invoicing')
 @login_required
 def invoicing():
-    """Stránka pro správu fakturace"""
-    # Načti souhrny po měsících
+    """Stránka pro správu fakturace - agregace podle zakázek"""
+    # Načti souhrny po měsících podle ZAKÁZEK (sečti všechny projekty)
     monthly_data = db.session.query(
         func.date_format(LogEntry.start_time, '%Y-%m').label('month'),
-        Project.id.label('project_id'),
-        Project.name.label('project_name'),
+        Zakazka.id.label('zakazka_id'),
+        Zakazka.name.label('zakazka_name'),
         func.sum(
             func.timestampdiff(text('MINUTE'), LogEntry.start_time, LogEntry.end_time)
         ) / 60.0
-    ).join(Project).filter(
+    ).select_from(LogEntry)\
+     .join(Projekt, LogEntry.project_id == Projekt.id)\
+     .join(Zakazka, Projekt.zakazka_id == Zakazka.id)\
+     .filter(
         LogEntry.user_id == current_user.id,
         LogEntry.end_time.isnot(None)
-    ).group_by('month', Project.id).order_by(text('month DESC')).all()
-    
-    # Načti historii faktur
+    ).group_by('month', Zakazka.id).order_by(text('month DESC')).all()
+
+    # Načti historii faktur - pozor, invoice_history má project_id (který je teď projekt, ne zakázka)
+    # Potřebujeme mapovat projekty na zakázky
     invoice_history = InvoiceHistory.query.filter_by(user_id=current_user.id).all()
-    invoiced_months = {(h.month, h.project_id) for h in invoice_history}
-    
+    # Vytvoř set fakturovaných měsíců/zakázek
+    invoiced_months = set()
+    for h in invoice_history:
+        if h.projekt:
+            invoiced_months.add((h.month, h.projekt.zakazka_id))
+
     # Připrav data s informací o fakturaci
     summaries = []
     for row in monthly_data:
         summaries.append({
             'month': row.month,
-            'project_id': row.project_id,
-            'project_name': row.project_name,
+            'zakazka_id': row.zakazka_id,
+            'zakazka_name': row.zakazka_name,
             'hours': round(row[3], 2),
-            'is_invoiced': (row.month, row.project_id) in invoiced_months
+            'is_invoiced': (row.month, row.zakazka_id) in invoiced_months
         })
-    
-    # Načti nastavení
-    settings = InvoiceSettings.query.join(Project).filter(
-        Project.user_id == current_user.id
+
+    # Načti nastavení pro zakázky
+    settings = InvoiceSettings.query.join(Zakazka).filter(
+        Zakazka.user_id == current_user.id
     ).all()
-    
-    return render_template('invoicing.html', 
+
+    return render_template('invoicing.html',
                           summaries=summaries,
                           settings=settings)
 
 @app.route('/invoicing/settings')
 @login_required
 def invoicing_settings():
-    """Nastavení fakturace"""
+    """Nastavení fakturace pro zakázky"""
     user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
-    projects = Project.query.filter_by(user_id=current_user.id).all()
-    invoice_settings = InvoiceSettings.query.join(Project).filter(
-        Project.user_id == current_user.id
+    zakazky = Zakazka.query.filter_by(user_id=current_user.id).all()
+    invoice_settings = InvoiceSettings.query.join(Zakazka).filter(
+        Zakazka.user_id == current_user.id
     ).all()
-    
+
     return render_template('invoicing_settings.html',
                           user_settings=user_settings,
-                          projects=projects,
+                          zakazky=zakazky,
                           invoice_settings=invoice_settings)
 
 @app.route('/invoicing/settings/save', methods=['POST'])
@@ -843,25 +1114,25 @@ def save_invoicing_settings():
     user_settings.idoklad_api_key = request.form.get('api_key')
     user_settings.idoklad_api_secret = request.form.get('api_secret')
     
-    # Ulož nastavení projektů
+    # Ulož nastavení zakázek
     for key in request.form:
         if key.startswith('contact_'):
-            project_id = key.split('_')[1]
-            settings = InvoiceSettings.query.filter_by(project_id=project_id).first()
+            zakazka_id = key.split('_')[1]
+            settings = InvoiceSettings.query.filter_by(zakazka_id=zakazka_id).first()
             if not settings:
-                settings = InvoiceSettings(project_id=project_id)
+                settings = InvoiceSettings(zakazka_id=zakazka_id)
                 db.session.add(settings)
-            
+
             # Ošetři prázdné hodnoty
-            contact_id = request.form.get(f'contact_{project_id}')
+            contact_id = request.form.get(f'contact_{zakazka_id}')
             settings.idoklad_contact_id = int(contact_id) if contact_id and contact_id.strip() else None
-            
-            settings.idoklad_item_name = request.form.get(f'item_{project_id}') or None
-            
-            rate = request.form.get(f'rate_{project_id}')
+
+            settings.idoklad_item_name = request.form.get(f'item_{zakazka_id}') or None
+
+            rate = request.form.get(f'rate_{zakazka_id}')
             settings.hourly_rate = float(rate) if rate and rate.strip() else None
-            
-            md = request.form.get(f'md_{project_id}')
+
+            md = request.form.get(f'md_{zakazka_id}')
             settings.hours_per_md = float(md) if md and md.strip() else 8.0
     
     db.session.commit()
@@ -871,30 +1142,30 @@ def save_invoicing_settings():
 @app.route('/invoicing/create', methods=['POST'])
 @login_required
 def create_invoice_route():
-    """Vytvoření faktury v iDokladu"""
+    """Vytvoření faktury v iDokladu - agreguje hodiny ze všech projektů zakázky"""
     month = request.form.get('month')
-    project_id = int(request.form.get('project_id'))
+    zakazka_id = int(request.form.get('zakazka_id'))
     description = request.form.get('description')
-    
-    # Načti nastavení
-    settings = InvoiceSettings.query.filter_by(project_id=project_id).first()
+
+    # Načti nastavení pro zakázku
+    settings = InvoiceSettings.query.filter_by(zakazka_id=zakazka_id).first()
     user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
     
     if not settings or not user_settings:
         flash('Chybí nastavení pro fakturaci')
         return redirect(url_for('invoicing'))
     
-    # Spočítej hodiny
+    # Spočítej hodiny ze VŠECH projektů pod zakázkou
     start_date = datetime.strptime(f"{month}-01", '%Y-%m-%d')
     end_date = start_date + relativedelta(months=1)
-    
+
     total_minutes = db.session.query(
         func.sum(
             func.timestampdiff(text('MINUTE'), LogEntry.start_time, LogEntry.end_time)
         )
-    ).filter(
+    ).join(Projekt).filter(
+        Projekt.zakazka_id == zakazka_id,
         LogEntry.user_id == current_user.id,
-        LogEntry.project_id == project_id,
         LogEntry.start_time >= start_date,
         LogEntry.start_time < end_date
     ).scalar() or 0
@@ -916,10 +1187,11 @@ def create_invoice_route():
     result = api.create_invoice(settings.idoklad_contact_id, items, description)
     
     if result.get('Data'):
-        # Ulož do historie
+        # Ulož do historie - použijeme první projekt zakázky pro kompatibilitu
+        first_projekt = Projekt.query.filter_by(zakazka_id=zakazka_id).first()
         history = InvoiceHistory(
             user_id=current_user.id,
-            project_id=project_id,
+            project_id=first_projekt.id if first_projekt else None,
             month=month,
             hours=hours,
             invoice_number=result['Data'].get('DocumentNumber'),

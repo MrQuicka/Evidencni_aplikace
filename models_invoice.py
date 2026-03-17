@@ -3,15 +3,23 @@ from models import db
 class InvoiceSettings(db.Model):
     __tablename__ = 'invoice_settings'
     id = db.Column(db.Integer, primary_key=True)
-    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    zakazka_id = db.Column(db.Integer, db.ForeignKey('zakazky.id'), nullable=False, unique=True)
     idoklad_contact_id = db.Column(db.Integer)
     idoklad_item_name = db.Column(db.String(200))
     hourly_rate = db.Column(db.Float)
     hours_per_md = db.Column(db.Float, default=8)
     default_description = db.Column(db.Text)
     vat_rate = db.Column(db.Float, default=21)  # DPH
-    
-    project = db.relationship('Project', backref='invoice_settings')
+
+    zakazka = db.relationship('Zakazka', backref=db.backref('invoice_settings', uselist=False))
+    # Alias for backward compatibility
+    @property
+    def project_id(self):
+        return self.zakazka_id
+
+    @property
+    def project(self):
+        return self.zakazka
 
 class UserSettings(db.Model):
     __tablename__ = 'user_settings'
@@ -26,12 +34,16 @@ class InvoiceHistory(db.Model):
     __tablename__ = 'invoice_history'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'))
+    project_id = db.Column(db.Integer, db.ForeignKey('projekty.id'))
     month = db.Column(db.String(7))  # YYYY-MM
     hours = db.Column(db.Float)
     invoice_number = db.Column(db.String(50))
     idoklad_invoice_id = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=db.func.now())
-    
+
     user = db.relationship('User')
-    project = db.relationship('Project')
+    projekt = db.relationship('Projekt')
+    # Alias for backward compatibility
+    @property
+    def project(self):
+        return self.projekt
