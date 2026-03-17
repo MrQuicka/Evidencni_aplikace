@@ -27,27 +27,21 @@
   }
   .section-bar {
     display: table-cell;
-    width: 6mm;
+    width: 5mm;
     background: #5bc0de;
-    vertical-align: middle;
-    text-align: center;
-  }
-  .section-bar span {
-    display: block;
-    color: #fff;
-    font-size: 5.5pt;
-    font-weight: bold;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    writing-mode: vertical-rl;
-    white-space: nowrap;
-    padding: 2mm 0;
-    margin: 0 auto;
   }
   .section-content {
     display: table-cell;
     vertical-align: top;
     padding-left: 3mm;
+  }
+  .section-title {
+    font-size: 7pt;
+    font-weight: bold;
+    color: #5bc0de;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1.5mm;
   }
 
   /* Header */
@@ -116,7 +110,7 @@
   /* Data */
   .dates-row {
     margin: 4mm 0;
-    padding-left: 9mm;
+    padding-left: 8mm;
     font-size: 9pt;
   }
   .dates-row strong { font-size: 10pt; }
@@ -138,12 +132,12 @@
   .payment-center {
     display: table-cell;
     vertical-align: top;
-    width: 35%;
+    width: 30%;
   }
   .payment-right {
     display: table-cell;
     vertical-align: top;
-    width: 30%;
+    width: 35%;
     text-align: right;
   }
   .payment-label { font-size: 8pt; color: #666; font-weight: bold; }
@@ -154,9 +148,9 @@
     font-weight: bold;
     color: #d9534f;
   }
-  .qr-code { margin-top: 1mm; }
-  .qr-code img { width: 22mm; height: 22mm; }
-  .qr-label { font-size: 7pt; color: #666; text-align: center; }
+  .qr-code { margin-top: 2mm; }
+  .qr-code img { width: 25mm; height: 25mm; }
+  .qr-label { font-size: 7pt; color: #666; text-align: center; margin-top: 1mm; }
 
   /* Tabulka položek */
   .legal-note {
@@ -192,7 +186,7 @@
     font-size: 8pt;
     color: #999;
     margin-top: 5mm;
-    padding-left: 9mm;
+    padding-left: 8mm;
     font-style: italic;
   }
 
@@ -272,8 +266,9 @@
 
   <!-- IDENTIFIKAČNÍ ÚDAJE -->
   <div class="section-with-bar">
-    <div class="section-bar"><span>Identifikační údaje</span></div>
+    <div class="section-bar"></div>
     <div class="section-content">
+      <div class="section-title">Identifikační údaje</div>
       <div class="contact-buyer-row">
         <div class="contact-info">
           <div style="font-weight:bold; margin-bottom:2mm;">Kontaktní údaje</div>
@@ -304,8 +299,9 @@
 
   <!-- PLATEBNÍ ÚDAJE -->
   <div class="section-with-bar section-platebni">
-    <div class="section-bar"><span>Platební údaje</span></div>
+    <div class="section-bar"></div>
     <div class="section-content">
+      <div class="section-title">Platební údaje</div>
       <div class="payment-grid">
         <div class="payment-left">
           <div class="payment-label">Bankovní účet</div>
@@ -334,7 +330,7 @@
           {% if qr_base64 %}
           <div class="qr-code">
             <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR Platba">
-            <div class="qr-label">QR Platba</div>
+            <div class="qr-label">QR Platba+F</div>
           </div>
           {% endif %}
         </div>
@@ -344,8 +340,9 @@
 
   <!-- FAKTURUJEME VÁM -->
   <div class="section-with-bar">
-    <div class="section-bar"><span>Fakturujeme vám</span></div>
+    <div class="section-bar"></div>
     <div class="section-content">
+      <div class="section-title">Fakturujeme vám</div>
       <div class="legal-note">
         {% if supplier.ic %}Dodavatel je zapsán v živnostenském rejstříku.{% endif %}<br>
         Fakturujeme Vám za dodané zboží či služby:
@@ -383,8 +380,9 @@
 
   <!-- REKAPITULACE -->
   <div class="section-with-bar">
-    <div class="section-bar"><span>Rekapitulace</span></div>
+    <div class="section-bar"></div>
     <div class="section-content">
+      <div class="section-title">Rekapitulace</div>
       <div class="total-box">
         <div class="total-label">Celkem k úhradě:</div>
         <div class="total-value">{{ format_czk(invoice.total_amount) }} Kč</div>

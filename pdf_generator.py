@@ -11,6 +11,38 @@ from flask import render_template
 from weasyprint import HTML
 
 
+def czech_account_to_iban(account):
+    """Převede české číslo účtu (formát 'účet/kód') na IBAN CZ.
+    Např. '2619529193/0800' → 'CZ4708000000002619529193'
+    """
+    if not account or '/' not in account:
+        return None
+    parts = account.strip().split('/')
+    if len(parts) != 2:
+        return None
+
+    account_part = parts[0]
+    bank_code = parts[1]
+
+    # Rozdělit na předčíslí a hlavní číslo
+    if '-' in account_part:
+        prefix, main = account_part.split('-', 1)
+    else:
+        prefix = '0'
+        main = account_part
+
+    # BBAN = kód banky (4) + předčíslí (6, doplněno nulami) + číslo účtu (10, doplněno nulami)
+    bban = f"{bank_code:0>4}{prefix:0>6}{main:0>10}"
+
+    # Výpočet kontrolního čísla IBAN
+    # Přesunout CZ00 na konec: BBAN + CZ00 → BBAN + 1235 + 00
+    check_str = bban + '123500'
+    check_num = int(check_str)
+    check_digits = 98 - (check_num % 97)
+
+    return f"CZ{check_digits:02d}{bban}"
+
+
 def generate_qr_payment(iban, amount, variable_symbol, constant_symbol='0308', message=''):
     """Generuje QR kód pro českou QR Platbu (SPD standard)."""
     # Odstranit mezery z IBAN
@@ -76,15 +108,19 @@ def format_czk(amount):
 
 def generate_invoice_pdf(invoice, supplier):
     """Generuje PDF faktury jako bytes."""
-    # QR kód pro platbu
+    # QR kód pro platbu — preferuje IBAN, fallback na převod z čísla účtu
     qr_base64 = None
-    if supplier and supplier.iban:
-        qr_base64 = generate_qr_payment(
-            iban=supplier.iban,
-            amount=float(invoice.total_amount),
-            variable_symbol=invoice.variable_symbol or invoice.invoice_number,
-            constant_symbol=invoice.constant_symbol or '0308'
-        )
+    if supplier:
+        iban = supplier.iban
+        if not iban and supplier.bank_account:
+            iban = czech_account_to_iban(supplier.bank_account)
+        if iban:
+            qr_base64 = generate_qr_payment(
+                iban=iban,
+                amount=float(invoice.total_amount),
+                variable_symbol=invoice.variable_symbol or invoice.invoice_number,
+                constant_symbol=invoice.constant_symbol or '0308'
+            )
 
     # Čárový kód
     barcode_base64 = generate_barcode_image(invoice.invoice_number)

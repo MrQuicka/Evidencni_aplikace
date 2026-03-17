@@ -1185,7 +1185,7 @@ def create_invoice_route():
     items = [{
         'Name': settings.idoklad_item_name or f'Práce za {month}',
         'Quantity': round(man_days, 2),
-        'UnitPrice': settings.hourly_rate * settings.hours_per_md,
+        'UnitPrice': settings.hourly_rate,  # Sazba/MD
         'Unit': 'MD',
         'VatRateType': 1  # Základní sazba DPH
     }]
